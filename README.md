@@ -12,7 +12,7 @@ released in versions later than the planned one (except for special cases).
 
 ## Release v0.1
 - [x] Add roadmap ([#1][i1])
-- [ ] Add contributing guidelines ([#12][i12])
+- [x] Add contributing guidelines ([#12][i12])
 - [ ] Add comments ([#2][i2])
 - [ ] Add general discussion threads ([#3][i3])
 - [ ] Add code discussion threads ([#4][i4])
@@ -34,6 +34,11 @@ released in versions later than the planned one (except for special cases).
 - [ ] Change authentication to be more secured ([#11][i11])
 - [ ] Get comments from gitlab ([#13][i13])
 - [ ] Add comments on the code ([#15][i15])
+
+# Contributing
+
+If you want to contribute anything to this plugin, please read
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 [i1]: https://github.com/omrisarig13/vim-mr-interface/issues/1
 [i2]: https://github.com/omrisarig13/vim-mr-interface/issues/2
