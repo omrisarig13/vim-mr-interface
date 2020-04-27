@@ -4,6 +4,13 @@
 
 vim plugin that support doing CRs and MRs in gitlab
 
+# Dependencies
+
+- Curl
+- 'LucHermitte/lh-vim-lib'
+- 'google/vim-maktaba'
+- 'google/vim-glaive'
+
 # Roadmap
 
 This is the general road-map of the Plugin implementation. Issues might be
