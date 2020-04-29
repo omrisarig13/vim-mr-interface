@@ -20,8 +20,8 @@ released in versions later than the planned one (except for special cases).
 ## Release v0.1
 - [x] Add roadmap ([#1][i1])
 - [x] Add contributing guidelines ([#12][i12])
-- [ ] Add comments ([#2][i2])
-- [ ] Add general discussion threads ([#3][i3])
+- [x] Add comments ([#2][i2])
+- [x] Add general discussion threads ([#3][i3])
 - [ ] Add code discussion threads ([#4][i4])
 - [ ] Add Plugin default parameters ([#14][i14])
 - [ ] Create Plugin documentation ([#5][i5])
