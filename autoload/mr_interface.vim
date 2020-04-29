@@ -58,18 +58,32 @@ endfunction
 " add a comment, and then adds this comment to the gitlab's MR.
 function! s:InteractiveAddGeneralDiscussionThread()
     " Get all the comments arguments.
-    let l:comment_body = input("Insert discussion thread body: ")
+    let l:content = s:InteractiveGetBodyAsContent()
     let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
     let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
 
     " Add the comment.
     return s:RunGitlabAction(
-        \ l:comment_body,
+        \ l:content,
         \ l:gitlab_authentication,
         \ l:merge_request_information,
         \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
 endfunction
 " s:InteractiveAddGeneralDiscussionThread }}}
+
+" s:InteractiveGetBodyAsContent() {{{
+""
+" Get the body of the gitlab action in the needed format as content.
+" This function should be used for commands that all their content is just the
+" 'body' of the command. Such commands are ADD_GENERAL_DISCUSSION_THREAD or
+" ADD_COMMENT.
+" This function will read the string from the user and set it as return it in
+" the needed format for the content adding.
+function! s:InteractiveGetBodyAsContent()
+    let l:body = input("Insert discussion thread body: ")
+    return {"body" : l:body}
+endfunction
+" s:InteractiveGetBodyAsContent() }}}
 
 " s:InteractiveGetMergeRequestInformation {{{
 ""
@@ -104,7 +118,7 @@ function! s:AddGeneralDiscussionThread(
             \ project_id,
             \ merge_request_id)
     return s:RunGitlabAction(
-        \ a:discussion_thread_body,
+        \ {'body': a:discussion_thread_body},
         \ {'private_token': a:gitlab_private_token},
         \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
@@ -119,13 +133,13 @@ endfunction
 " add a comment, and then adds this comment to the gitlab's MR.
 function! s:InteractiveAddComment()
     " Get all the comments arguments.
-    let l:comment_body = input("Insert comment body: ")
+    let l:content = s:InteractiveGetBodyAsContent()
     let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
     let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
 
     " Add the comment.
     return s:RunGitlabAction(
-        \ l:comment_body,
+        \ l:content,
         \ l:gitlab_authentication,
         \ l:merge_request_information,
         \ s:gitlab_actions.ADD_COMMENT)
@@ -141,7 +155,7 @@ function! s:AddComment(
             \ project_id,
             \ merge_request_id)
     return s:RunGitlabAction(
-        \ a:comment_body,
+        \ {'body': a:comment_body},
         \ {'private_token':a:gitlab_private_token},
         \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_COMMENT)
@@ -152,13 +166,13 @@ endfunction
 ""
 " Add the given comment into the given gitlab's MR.
 function! s:RunGitlabAction(
-            \ comment_body,
+            \ content,
             \ gitlab_authentication,
             \ merge_request_information,
             \ gitlab_action)
     " Create the command.
     let l:command = s:CreateGitlabActionCommand(
-        \ a:comment_body,
+        \ a:content,
         \ a:gitlab_authentication,
         \ a:merge_request_information,
         \ a:gitlab_action)
@@ -176,9 +190,15 @@ endfunction
 
 " s:CreateGitlabActionCommand {{{
 ""
-" Creates the needed command in order to add the comment to the given MR.
+" Creates the needed command in order to run a command on gitlab for the given
+" MR.
+" This function creates the command from the information given to it. Different
+" commands will be created according to the different possible values of
+" gitlab_actions.
+" The value of content should be a dictionary with all the post parameters that
+" should be sent as part of the command.
 function! s:CreateGitlabActionCommand(
-            \ comment_body,
+            \ content,
             \ gitlab_authentication,
             \ merge_request_information,
             \ gitlab_action)
@@ -186,13 +206,27 @@ function! s:CreateGitlabActionCommand(
         \ a:merge_request_information,
         \ a:gitlab_action)
     let l:authentication = s:CreateGitlabAuthentication(a:gitlab_authentication)
+    let l:content = s:CreateCommandContent(a:content)
     return printf(
-        \ 'curl -d "body=%s" --request POST %s %s',
-        \ a:comment_body,
+        \ 'curl -H "Content-Type: application/json" -d ''%s'' --request POST %s %s',
+        \ l:content,
         \ l:authentication,
         \ l:url)
 endfunction
 " s:CreateGitlabActionCommand }}}
+
+" s:CreateCommandContent {{{
+""
+" Create a string ready to be sent as a content in the POST request of curl.
+function! s:CreateCommandContent(content)
+    " When running string() on a dictionary, it returns the strings in it with
+    " single quote, but CURL needs the strings to be with double quotes. This
+    " code replace all the single quote characters to double quotes.
+    " TODO: This is a patch, and it is better to fix it to work better in the
+    " future.
+    return substitute(string(a:content), "'", '"', 'g')
+endfunction
+" s:CreateCommandContent }}}
 
 " s:CreateGitlabAuthentication {{{
 ""
