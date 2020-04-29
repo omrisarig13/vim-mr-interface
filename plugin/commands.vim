@@ -26,3 +26,17 @@ endif
 " Add a comment to gitlab. In this form, the comment that will be added will
 " have all the arguments as given from the ex-command.
 command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
+
+""
+" @usage
+" Add a general discussion thread into a gitlab MR.
+" A general discussion thread is the same as comment, but it can be resolved.
+" If run without arguments, this function works interactively (asks you for all
+" the needed arguments during the command run and add them as you insert them).
+" Once all the arguments are inserted, the new discussion thread will be added
+" to the gitlab MR.
+"
+" @usage [body] [private_token] [project_id] [merge_request_id]
+" Add a comment to gitlab. In this form, the discussion thread that will be
+" added will have all the arguments as given from the ex-command.
+command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGeneralDiscussionThread(<f-args>)

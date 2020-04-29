@@ -5,7 +5,9 @@
 ""
 " An enum that will include all the possible commands.
 " @private
-let s:gitlab_actions = maktaba#enum#Create(['ADD_COMMENT'])
+let s:gitlab_actions = maktaba#enum#Create([
+            \ 'ADD_COMMENT',
+            \ 'ADD_GENERAL_DISCUSSION_THREAD'])
 
 " Constant Global Variables }}}
 
@@ -47,6 +49,46 @@ function! s:RemoveStringQuotes(string)
     return substitute(a:string, "[\"']", '', 'g')
 endfunction
 " s:RemoveStringQuotes }}}
+
+" s:InteractiveAddGeneralDiscussionThread {{{
+""
+" Add a general discussion thread to a gitlab MR interactively.
+"
+" This functions asks the user to insert all the needed information in order to
+" add a comment, and then adds this comment to the gitlab's MR.
+function! s:InteractiveAddGeneralDiscussionThread()
+    " Get all the comments arguments.
+    let l:comment_body = input("Insert discussion thread body: ")
+    let l:gitlab_private_token = input("Insert gitlab private token: ")
+    let l:project_id = input("Insert project id: ")
+    let l:merge_request_id = input("Insert merge request id: ")
+
+    " Add the comment.
+    return s:AddGeneralDiscussionThread(
+        \ l:comment_body,
+        \ l:gitlab_private_token,
+        \ l:project_id,
+        \ l:merge_request_id)
+endfunction
+" s:InteractiveAddGeneralDiscussionThread }}}
+
+" s:AddGeneralDiscussionThread {{{
+""
+" Add the given comment into the given gitlab's MR.
+function! s:AddGeneralDiscussionThread(
+            \ discussion_thread_body,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    return s:RunGitlabAction(
+        \ a:discussion_thread_body,
+        \ a:gitlab_private_token,
+        \ a:project_id,
+        \ a:merge_request_id,
+        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
+endfunction
+" s:AddGeneralDiscussionThread }}}
+
 
 " s:InteractiveAddComment {{{
 ""
@@ -160,6 +202,8 @@ endfunction
 function! s:GetActionUrl(gitlab_action)
     if a:gitlab_action == s:gitlab_actions.ADD_COMMENT
         return "notes"
+    elseif a:gitlab_action == s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD
+        return "discussions"
     endif
 endfunction
 " s:GetActionUrl }}}
@@ -257,6 +301,37 @@ function! mr_interface#AddComment(...)
     endif
 endfunction
 " mr_interface#AddComment }}}
+
+" mr_interface#AddGeneralDiscussionThread {{{
+""
+" Add a general discussion thread to the gitlab MR.
+" This function can ran either with no arguments or with all the needed
+" arguments for adding a comment.
+" In case it is run without arguments, the user will be prompt to add the needed
+" arguments. In case it run with all the arguments, the discussion thread will
+" just be added to the MR. In case it was run with invalid arguments, an error
+" will be printed to the screen.
+function! mr_interface#AddGeneralDiscussionThread(...)
+    " Get the real arguments.
+    let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
+
+    " Call the actual function.
+    if len(l:real_arguments) == 0
+        call s:InteractiveAddGeneralDiscussionThread()
+    elseif len(l:real_arguments) == 4
+        " TODO: I could not find a way to unpack the list automatically. Try to
+        " research it a bit more in the future.
+        call s:AddGeneralDiscussionThread(
+            \ l:real_arguments[0],
+            \ l:real_arguments[1],
+            \ l:real_arguments[2],
+            \ l:real_arguments[3])
+    else
+        call maktaba#error#Shout(
+            \ "Invalid number of arguments to add command")
+    endif
+endfunction
+" mr_interface#AddGeneralDiscussionThread }}}
 
 " Exported Functions }}}
 
