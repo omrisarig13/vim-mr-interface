@@ -59,18 +59,41 @@ endfunction
 function! s:InteractiveAddGeneralDiscussionThread()
     " Get all the comments arguments.
     let l:comment_body = input("Insert discussion thread body: ")
-    let l:gitlab_private_token = input("Insert gitlab private token: ")
+    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
+    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
+
+    " Add the comment.
+    return s:RunGitlabAction(
+        \ l:comment_body,
+        \ l:gitlab_authentication,
+        \ l:merge_request_information,
+        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
+endfunction
+" s:InteractiveAddGeneralDiscussionThread }}}
+
+" s:InteractiveGetMergeRequestInformation {{{
+""
+" Get all the needed information to add something into a merge request.
+function! s:InteractiveGetMergeRequestInformation()
     let l:project_id = input("Insert project id: ")
     let l:merge_request_id = input("Insert merge request id: ")
 
-    " Add the comment.
-    return s:AddGeneralDiscussionThread(
-        \ l:comment_body,
-        \ l:gitlab_private_token,
-        \ l:project_id,
-        \ l:merge_request_id)
+    return {'project_id': l:project_id, 'merge_request_id': l:merge_request_id}
 endfunction
-" s:InteractiveAddGeneralDiscussionThread }}}
+" s:InteractiveGetMergeRequestInformation }}}
+
+" s:InteractiveGetGitlabAutentication {{{
+""
+" Get all the needed information to authenticate with the gitlab interactively.
+"
+" Currently, it just asks the user to insert his private token. However, it can
+" be changed in the future, for more secure authentication.
+function! s:InteractiveGetGitlabAutentication()
+    let l:private_token = input("Insert gitlab private token: ")
+
+    return {'private_token': l:private_token}
+endfunction
+" s:InteractiveGetGitlabAutentication }}}h
 
 " s:AddGeneralDiscussionThread {{{
 ""
@@ -82,13 +105,11 @@ function! s:AddGeneralDiscussionThread(
             \ merge_request_id)
     return s:RunGitlabAction(
         \ a:discussion_thread_body,
-        \ a:gitlab_private_token,
-        \ a:project_id,
-        \ a:merge_request_id,
+        \ {'private_token': a:gitlab_private_token},
+        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
 endfunction
 " s:AddGeneralDiscussionThread }}}
-
 
 " s:InteractiveAddComment {{{
 ""
@@ -99,16 +120,15 @@ endfunction
 function! s:InteractiveAddComment()
     " Get all the comments arguments.
     let l:comment_body = input("Insert comment body: ")
-    let l:gitlab_private_token = input("Insert gitlab private token: ")
-    let l:project_id = input("Insert project id: ")
-    let l:merge_request_id = input("Insert merge request id: ")
+    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
+    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
 
     " Add the comment.
-    return s:AddComment(
+    return s:RunGitlabAction(
         \ l:comment_body,
-        \ l:gitlab_private_token,
-        \ l:project_id,
-        \ l:merge_request_id)
+        \ l:gitlab_authentication,
+        \ l:merge_request_information,
+        \ s:gitlab_actions.ADD_COMMENT)
 endfunction
 " s:InteractiveAddComment }}}
 
@@ -122,9 +142,8 @@ function! s:AddComment(
             \ merge_request_id)
     return s:RunGitlabAction(
         \ a:comment_body,
-        \ a:gitlab_private_token,
-        \ a:project_id,
-        \ a:merge_request_id,
+        \ {'private_token':a:gitlab_private_token},
+        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_COMMENT)
 endfunction
 " s:AddComment }}}
@@ -134,16 +153,14 @@ endfunction
 " Add the given comment into the given gitlab's MR.
 function! s:RunGitlabAction(
             \ comment_body,
-            \ gitlab_private_token,
-            \ project_id,
-            \ merge_request_id,
+            \ gitlab_authentication,
+            \ merge_request_information,
             \ gitlab_action)
     " Create the command.
     let l:command = s:CreateGitlabActionCommand(
         \ a:comment_body,
-        \ a:gitlab_private_token,
-        \ a:project_id,
-        \ a:merge_request_id,
+        \ a:gitlab_authentication,
+        \ a:merge_request_information,
         \ a:gitlab_action)
 
     " Run the command.
@@ -162,34 +179,47 @@ endfunction
 " Creates the needed command in order to add the comment to the given MR.
 function! s:CreateGitlabActionCommand(
             \ comment_body,
-            \ gitlab_private_token,
-            \ project_id,
-            \ merge_request_id,
+            \ gitlab_authentication,
+            \ merge_request_information,
             \ gitlab_action)
     let l:url = s:CreateGitlabCommandAddress(
-        \ a:project_id,
-        \ a:merge_request_id,
+        \ a:merge_request_information,
         \ a:gitlab_action)
+    let l:authentication = s:CreateGitlabAuthentication(a:gitlab_authentication)
     return printf(
-        \ 'curl -d "body=%s" --request POST --header "PRIVATE-TOKEN: %s" %s',
+        \ 'curl -d "body=%s" --request POST %s %s',
         \ a:comment_body,
-        \ a:gitlab_private_token,
+        \ l:authentication,
         \ l:url)
 endfunction
 " s:CreateGitlabActionCommand }}}
+
+" s:CreateGitlabAuthentication {{{
+""
+" Creates and returns the needed information to add to the curl command in order
+" to authenticate with gitlab.
+" Currently, the only method that this function supports is by using a private
+" token, however, it will be possible to extend it in the future to support more
+" (and more secured) authentication ways.
+function! s:CreateGitlabAuthentication(
+            \ gitlab_authentication)
+    return printf(
+                \ '--header "PRIVATE-TOKEN: %s"',
+                \ a:gitlab_authentication.private_token)
+endfunction
+" s:CreateGitlabAuthentication }}}
 
 " s:CreateGitlabCommandAddress {{{
 ""
 " Create the needed command in order to add a comment to the given gitlab MR.
 function! s:CreateGitlabCommandAddress(
-            \ project_id,
-            \ merge_request_id,
+            \ merge_request_information,
             \ gitlab_action)
     " TODO: Get the address of gitlab as well (for other gitlabs).
     return printf(
         \ "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/%s?body=note",
-        \ a:project_id,
-        \ a:merge_request_id,
+        \ a:merge_request_information.project_id,
+        \ a:merge_request_information.merge_request_id,
         \ s:GetActionUrl(a:gitlab_action))
 endfunction
 " s:CreateGitlabCommandAddress }}}
@@ -311,6 +341,12 @@ endfunction
 " arguments. In case it run with all the arguments, the discussion thread will
 " just be added to the MR. In case it was run with invalid arguments, an error
 " will be printed to the screen.
+"
+" This function looks a lot like the function mr_interface#AddComment. However,
+" they should not be merged into a single action. These actions depend on
+" different interfaces of gitlab. Since these interfaces can be changed
+" differently, these commands won't look the same, and the functions will have
+" to change. It is better to keep these commands separated.
 function! mr_interface#AddGeneralDiscussionThread(...)
     " Get the real arguments.
     let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
