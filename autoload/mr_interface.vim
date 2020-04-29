@@ -1,3 +1,16 @@
+" Variables {{{
+
+" Constant Global Variables {{{
+
+""
+" An enum that will include all the possible commands.
+" @private
+let s:gitlab_actions = maktaba#enum#Create(['ADD_COMMENT'])
+
+" Constant Global Variables }}}
+
+" Variables }}}
+
 " Functions {{{
 
 " Internal Functions {{{
@@ -65,12 +78,31 @@ function! s:AddComment(
             \ gitlab_private_token,
             \ project_id,
             \ merge_request_id)
-    " Create the command.
-    let l:command = s:CreateMRAddCommentCommand(
+    return s:RunGitlabAction(
         \ a:comment_body,
         \ a:gitlab_private_token,
         \ a:project_id,
-        \ a:merge_request_id)
+        \ a:merge_request_id,
+        \ s:gitlab_actions.ADD_COMMENT)
+endfunction
+" s:AddComment }}}
+
+" s:RunGitlabAction {{{
+""
+" Add the given comment into the given gitlab's MR.
+function! s:RunGitlabAction(
+            \ comment_body,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id,
+            \ gitlab_action)
+    " Create the command.
+    let l:command = s:CreateGitlabActionCommand(
+        \ a:comment_body,
+        \ a:gitlab_private_token,
+        \ a:project_id,
+        \ a:merge_request_id,
+        \ a:gitlab_action)
 
     " Run the command.
     let l:command_result = system(l:command)
@@ -81,38 +113,56 @@ function! s:AddComment(
         \ "Added comment successfully",
         \ "Could not add comment. Error: ")
 endfunction
-" s:AddComment }}}
+" s:RunGitlabAction }}}
 
-" s:CreateMRAddCommentCommand {{{
+" s:CreateGitlabActionCommand {{{
 ""
 " Creates the needed command in order to add the comment to the given MR.
-function! s:CreateMRAddCommentCommand(
+function! s:CreateGitlabActionCommand(
             \ comment_body,
             \ gitlab_private_token,
             \ project_id,
-            \ merge_request_id)
-    let l:url = s:CreateGitlabCommentAddAddress(
+            \ merge_request_id,
+            \ gitlab_action)
+    let l:url = s:CreateGitlabCommandAddress(
         \ a:project_id,
-        \ a:merge_request_id)
+        \ a:merge_request_id,
+        \ a:gitlab_action)
     return printf(
         \ 'curl -d "body=%s" --request POST --header "PRIVATE-TOKEN: %s" %s',
         \ a:comment_body,
         \ a:gitlab_private_token,
         \ l:url)
 endfunction
-" s:CreateMRAddCommentCommand }}}
+" s:CreateGitlabActionCommand }}}
 
-" s:CreateGitlabCommentAddAddress {{{
+" s:CreateGitlabCommandAddress {{{
 ""
 " Create the needed command in order to add a comment to the given gitlab MR.
-function! s:CreateGitlabCommentAddAddress(project_id, merge_request_id)
+function! s:CreateGitlabCommandAddress(
+            \ project_id,
+            \ merge_request_id,
+            \ gitlab_action)
     " TODO: Get the address of gitlab as well (for other gitlabs).
     return printf(
-        \ "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/notes?body=note",
+        \ "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/%s?body=note",
         \ a:project_id,
-        \ a:merge_request_id)
-endfunction!
-" s:CreateGitlabCommentAddAddress }}}
+        \ a:merge_request_id,
+        \ s:GetActionUrl(a:gitlab_action))
+endfunction
+" s:CreateGitlabCommandAddress }}}
+
+" s:GetActionUrl {{{
+""
+" Get the needed string to append to the MR for the given command type.
+" This function gets one of the values of s:gitlab_actions and returns the
+" appropriate string in the URL.
+function! s:GetActionUrl(gitlab_action)
+    if a:gitlab_action == s:gitlab_actions.ADD_COMMENT
+        return "notes"
+    endif
+endfunction
+" s:GetActionUrl }}}
 
 " s:ValidateCommandOutput {{{
 ""
