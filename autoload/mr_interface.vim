@@ -10,6 +10,10 @@ let s:gitlab_actions = maktaba#enum#Create([
             \ 'ADD_GENERAL_DISCUSSION_THREAD',
             \ 'ADD_CODE_DISCUSSION_THREAD'])
 
+""
+" All the configured arguments.
+let s:plugin = maktaba#plugin#Get('vim-mr-interface')
+
 " Constant Global Variables }}}
 
 " Variables }}}
@@ -376,7 +380,8 @@ function! s:CreateGitlabCommandAddress(
             \ gitlab_action)
     " TODO: Get the address of gitlab as well (for other gitlabs).
     return printf(
-        \ "https://gitlab.com/api/v4/projects/%s/merge_requests/%s/%s?body=note",
+        \ "https://%s/api/v4/projects/%s/merge_requests/%s/%s?body=note",
+        \ s:plugin.Flag('gitlab_server_address'),
         \ a:merge_request_information.project_id,
         \ a:merge_request_information.merge_request_id,
         \ s:GetActionUrl(a:gitlab_action))
