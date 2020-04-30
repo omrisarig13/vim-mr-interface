@@ -22,9 +22,14 @@ endif
 " Once all the arguments are inserted, the comment will be added to the gitlab
 " MR.
 "
-" @usage [body] [private_token] [project_id] [merge_request_id]
+" @usage [body] [project_id] [merge_request_id]
 " Add a comment to gitlab. In this form, the comment that will be added will
 " have all the arguments as given from the ex-command.
+"
+" @usage [body] [private_token] [project_id] [merge_request_id]
+" This is the same as the previous form except that in this form the
+" private_token is inserted as well. When run with this form, the private token
+" that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 
 ""
@@ -36,9 +41,15 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 " Once all the arguments are inserted, the new discussion thread will be added
 " to the gitlab MR.
 "
+" @usage [body] [project_id] [merge_request_id]
+" Add a general discussion thread to gitlab. In this form, the general
+" discussion thread that will be added will have all the arguments as given from
+" the ex-command.
+"
 " @usage [body] [private_token] [project_id] [merge_request_id]
-" Add a comment to gitlab. In this form, the discussion thread that will be
-" added will have all the arguments as given from the ex-command.
+" This is the same as the previous form except that in this form the
+" private_token is inserted as well. When run with this form, the private token
+" that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGeneralDiscussionThread(<f-args>)
 
 ""
@@ -51,10 +62,15 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 " Once all the arguments are inserted, the new discussion thread will be added
 " to the gitlab MR.
 "
-" @usage [body] [base_sha] [start_sha] [head_sha] [old_path] [new_path] [old_line] [new_line] [gitlab_private_token] [project_id] [merge_request_id]
+" @usage [body] [base_sha] [start_sha] [head_sha] [old_path] [new_path] [old_line] [new_line] [project_id] [merge_request_id]
 " Add a code discussion thread to gitlab. In this form, the discussion thread
 " that will be added will have all the arguments as given from the
 " ex-command. This command is filled with a lot of arguments. Almost always it
 " will be easier to use the interactive form of this command. (Here mainly for
 " automations if needed).
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [old_path] [new_path] [old_line] [new_line] [gitlab_private_token] [project_id] [merge_request_id]
+" This is the same as the previous form except that in this form the
+" private_token is inserted as well. When run with this form, the private token
+" that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDiscussionThread(<f-args>)

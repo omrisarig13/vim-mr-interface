@@ -25,3 +25,10 @@ endif
 ""
 " Save the address of the gitlab server to run the commands on.
 call s:plugin.Flag('gitlab_server_address', 'gitlab.com')
+
+""
+" Save the private token to use when authenticating with gitlab.
+" This flag should be defined by the user with the proper gitlab authentication
+" information. If it will stay empty, the user will be prompt to add the private
+" token every time he runs any command.
+call s:plugin.Flag('gitlab_private_token', '')
