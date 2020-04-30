@@ -7,7 +7,8 @@
 " @private
 let s:gitlab_actions = maktaba#enum#Create([
             \ 'ADD_COMMENT',
-            \ 'ADD_GENERAL_DISCUSSION_THREAD'])
+            \ 'ADD_GENERAL_DISCUSSION_THREAD',
+            \ 'ADD_CODE_DISCUSSION_THREAD'])
 
 " Constant Global Variables }}}
 
@@ -50,6 +51,130 @@ function! s:RemoveStringQuotes(string)
 endfunction
 " s:RemoveStringQuotes }}}
 
+" s:InteractiveAddCodeDiscussionThread {{{
+""
+" Add a code discussion thread to a gitlab MR interactively.
+"
+" This functions asks the user to insert all the needed information in order to
+" add a code discussion thread, and then adds this new discussion thread to the
+" gitlab's MR.
+function! s:InteractiveAddCodeDiscussionThread()
+    " Get all the comments arguments.
+    let l:content = s:InteractiveGetCodeDiscussionThreadContet()
+    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
+    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
+
+    " Add the comment.
+    return s:RunGitlabAction(
+        \ l:content,
+        \ l:gitlab_authentication,
+        \ l:merge_request_information,
+        \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
+endfunction
+" s:InteractiveAddCodeDiscussionThread }}}
+
+" s:AddCodeDiscussionThread {{{
+""
+" Add a code discussion thread to a gitlab MR interactively.
+function! s:AddCodeDiscussionThread(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ old_path,
+            \ new_path,
+            \ old_line,
+            \ new_line,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    let l:content = {}
+    call extend(l:content, s:CreatePositionDict(
+        \ a:base_sha,
+        \ a:start_sha,
+        \ a:head_sha,
+        \ a:old_path,
+        \ a:new_path,
+        \ a:old_line,
+        \ a:new_line))
+    let l:content['body'] = a:comment_body
+    return s:RunGitlabAction(
+        \ l:content,
+        \ {'private_token':a:gitlab_private_token},
+        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
+        \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
+endfunction
+" s:InteractiveAddCodeDiscussionThread }}}
+
+" s:InteractiveGetCodeDiscussionThreadContet {{{
+""
+" Get all the needed information for the content of a discussion thread on the
+" code.
+function! s:InteractiveGetCodeDiscussionThreadContet()
+    let l:all_variables = {}
+    call extend(l:all_variables, s:InteractiveGetBodyAsContent())
+    call extend(l:all_variables, s:InteractiveGetPosition())
+    return l:all_variables
+endfunction
+" s:InteractiveGetCodeDiscussionThreadContet }}}
+
+" s:InteractiveGetPosition {{{
+""
+" Get all the needed information for a position on the code for the MR.
+function! s:InteractiveGetPosition()
+    let l:base_sha = input("Insert the base sha: ")
+    let l:start_sha = input("Insert the start sha: ")
+    let l:head_sha = input("Insert the value for the head sha: ")
+    let l:old_path = input("Insert the old path of the file: ")
+    let l:new_path = input("Insert the new path of the file: ")
+    let l:old_line = input("Insert the old line for the comment: ")
+    let l:new_line = input("Insert the new line for the comment: ")
+    return s:CreatePositionDict(
+        \ l:base_sha,
+        \ l:start_sha,
+        \ l:head_sha,
+        \ l:old_path,
+        \ l:new_path,
+        \ l:old_line,
+        \ l:new_line)
+endfunction
+" s:InteractiveGetPosition }}}
+
+" s:CreatePositionDict {{{
+""
+" Create the position dictionary from all its raw arguments.
+function! s:CreatePositionDict(
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ old_path,
+            \ new_path,
+            \ old_line,
+            \ new_line)
+    let l:position_dict = {}
+    let position_dict['base_sha'] = a:base_sha
+    let position_dict['start_sha'] = a:start_sha
+    let position_dict['head_sha'] = a:head_sha
+    let position_dict['position_type'] = 'text'
+    call s:AddIfNotEmpty(l:position_dict, 'old_path', a:old_path)
+    call s:AddIfNotEmpty(l:position_dict, 'new_path', a:new_path)
+    call s:AddIfNotEmpty(l:position_dict, 'old_line', a:old_line)
+    call s:AddIfNotEmpty(l:position_dict, 'new_line', a:new_line)
+    return {"position": l:position_dict}
+endfunction
+" s:CreatePositionDict }}}
+
+" s:AddIfNotEmpty {{{
+""
+" Add the current entry to the dictionary in case the value is not empty.
+" This functions assume that a string of `null` is an empty string.
+function! s:AddIfNotEmpty(dictionary_to_add, new_key, new_value)
+    if !empty(a:new_value) && (a:new_value != 'null')
+        let a:dictionary_to_add[a:new_key] = a:new_value
+    endif
+endfunction
+" s:AddIfNotEmpty }}}
+
 " s:InteractiveAddGeneralDiscussionThread {{{
 ""
 " Add a general discussion thread to a gitlab MR interactively.
@@ -71,7 +196,7 @@ function! s:InteractiveAddGeneralDiscussionThread()
 endfunction
 " s:InteractiveAddGeneralDiscussionThread }}}
 
-" s:InteractiveGetBodyAsContent() {{{
+" s:InteractiveGetBodyAsContent {{{
 ""
 " Get the body of the gitlab action in the needed format as content.
 " This function should be used for commands that all their content is just the
@@ -83,7 +208,7 @@ function! s:InteractiveGetBodyAsContent()
     let l:body = input("Insert discussion thread body: ")
     return {"body" : l:body}
 endfunction
-" s:InteractiveGetBodyAsContent() }}}
+" s:InteractiveGetBodyAsContent }}}
 
 " s:InteractiveGetMergeRequestInformation {{{
 ""
@@ -268,6 +393,10 @@ function! s:GetActionUrl(gitlab_action)
         return "notes"
     elseif a:gitlab_action == s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD
         return "discussions"
+    elseif a:gitlab_action == s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD
+        " This is the same as the if above, but it doesn't must stay that way in
+        " the future, so it is better to separate them.
+        return "discussions"
     endif
 endfunction
 " s:GetActionUrl }}}
@@ -402,6 +531,50 @@ function! mr_interface#AddGeneralDiscussionThread(...)
     endif
 endfunction
 " mr_interface#AddGeneralDiscussionThread }}}
+
+" mr_interface#AddCodeDiscussionThread {{{
+""
+" Add a code discussion thread to the gitlab MR.
+" This function can ran either with no arguments or with all the needed
+" arguments for adding a code discussion thread.
+" In case it is run without arguments, the user will be prompt to add the needed
+" arguments. In case it run with all the arguments, the discussion thread will
+" just be added to the MR. In case it was run with invalid number of arguments,
+" an error will be printed to the screen.
+"
+" This function looks a lot like the function mr_interface#AddComment. However,
+" they should not be merged into a single action. These actions depend on
+" different interfaces of gitlab. Since these interfaces can be changed
+" differently, these commands won't look the same, and the functions will have
+" to change. It is better to keep these commands separated.
+function! mr_interface#AddCodeDiscussionThread(...)
+    " Get the real arguments.
+    let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
+
+    " Call the actual function.
+    if len(l:real_arguments) == 0
+        call s:InteractiveAddCodeDiscussionThread()
+    elseif len(l:real_arguments) == 11
+        " TODO: I could not find a way to unpack the list automatically. Try to
+        " research it a bit more in the future.
+        call s:AddCodeDiscussionThread(
+            \ l:real_arguments[0],
+            \ l:real_arguments[1],
+            \ l:real_arguments[2],
+            \ l:real_arguments[3],
+            \ l:real_arguments[4],
+            \ l:real_arguments[5],
+            \ l:real_arguments[6],
+            \ l:real_arguments[7],
+            \ l:real_arguments[8],
+            \ l:real_arguments[9],
+            \ l:real_arguments[10])
+    else
+        call maktaba#error#Shout(
+            \ "Invalid number of arguments to add code discussion thread command")
+    endif
+endfunction
+" mr_interface#AddCodeDiscussionThread }}}
 
 " Exported Functions }}}
 
