@@ -11,10 +11,39 @@ let s:gitlab_actions = maktaba#enum#Create([
             \ 'ADD_CODE_DISCUSSION_THREAD'])
 
 ""
-" All the configured arguments.
-let s:plugin = maktaba#plugin#Get('vim-mr-interface')
+" The string for asking the user for a given key when there isn't any cache for
+" this value.
+" @private
+let s:insert_string_without_default = "Insert value for %s: "
+
+""
+" The string for asking the user for a given key when there is a value in the
+" cache for this value.
+" @private
+let s:insert_string_with_default = "Insert value for %s [%s]: "
 
 " Constant Global Variables }}}
+
+" Global Variables {{{
+
+""
+" All the configured arguments.
+" @private
+let s:plugin = maktaba#plugin#Get('vim-mr-interface')
+
+""
+" A cache that will be used to save old values inserted by the user.
+"
+" Many of the command in the plugin will run a lot of times with most of the
+" same arguments. In order to make it easier for the user to use the plugin, the
+" plugin will maintain a simple cache with the last inserted value in any such
+" field.
+" @private
+if !exists("s:cache")
+    let s:cache = {}
+endif
+
+" Global Variables }}}
 
 " Variables }}}
 
@@ -79,7 +108,7 @@ endfunction
 
 " s:AddCodeDiscussionThread {{{
 ""
-" Add a code discussion thread to a gitlab MR interactively.
+" Add a code discussion thread to a gitlab MR.
 function! s:AddCodeDiscussionThread(
             \ comment_body,
             \ base_sha,
@@ -104,11 +133,11 @@ function! s:AddCodeDiscussionThread(
                 \ a:project_id,
                 \ a:merge_request_id)
 endfunction
-" s:InteractiveAddCodeDiscussionThread }}}
+" s:AddCodeDiscussionThread }}}
 
 " s:AddCodeDiscussionThreadWithPrivateToken {{{
 ""
-" Add a code discussion thread to a gitlab MR interactively.
+" Add a code discussion thread to a gitlab MR.
 function! s:AddCodeDiscussionThreadWithPrivateToken(
             \ comment_body,
             \ base_sha,
@@ -137,7 +166,7 @@ function! s:AddCodeDiscussionThreadWithPrivateToken(
         \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
 endfunction
-" s:InteractiveAddCodeDiscussionThreadWithPrivateToken }}}
+" s:AddCodeDiscussionThreadWithPrivateToken }}}
 
 " s:InteractiveGetCodeDiscussionThreadContet {{{
 ""
@@ -155,13 +184,14 @@ endfunction
 ""
 " Get all the needed information for a position on the code for the MR.
 function! s:InteractiveGetPosition()
-    let l:base_sha = input("Insert the base sha: ")
-    let l:start_sha = input("Insert the start sha: ")
-    let l:head_sha = input("Insert the value for the head sha: ")
-    let l:old_path = input("Insert the old path of the file: ")
-    let l:new_path = input("Insert the new path of the file: ")
-    let l:old_line = input("Insert the old line for the comment: ")
-    let l:new_line = input("Insert the new line for the comment: ")
+    " The arguments of the sha probably won't change, use them from the cache.
+    let l:base_sha = s:GetWithCache('base sha')
+    let l:start_sha = s:GetWithCache('start sha')
+    let l:head_sha = s:GetWithCache('head sha')
+    let l:old_path = input(printf(s:insert_string_without_default, 'old path'))
+    let l:new_path = s:InputWithDefault('new path', l:old_path)
+    let l:old_line = input(printf(s:insert_string_without_default, 'old line'))
+    let l:new_line = input(printf(s:insert_string_without_default, 'new line'))
     return s:CreatePositionDict(
         \ l:base_sha,
         \ l:start_sha,
@@ -238,7 +268,7 @@ endfunction
 " This function will read the string from the user and set it as return it in
 " the needed format for the content adding.
 function! s:InteractiveGetBodyAsContent()
-    let l:body = input("Insert body: ")
+    let l:body = input(printf(s:insert_string_without_default, 'body'))
     return {"body" : l:body}
 endfunction
 " s:InteractiveGetBodyAsContent }}}
@@ -247,8 +277,8 @@ endfunction
 ""
 " Get all the needed information to add something into a merge request.
 function! s:InteractiveGetMergeRequestInformation()
-    let l:project_id = input("Insert project id: ")
-    let l:merge_request_id = input("Insert merge request id: ")
+    let l:project_id = s:GetWithCache('project id')
+    let l:merge_request_id = s:GetWithCache('merge request id')
 
     return {'project_id': l:project_id, 'merge_request_id': l:merge_request_id}
 endfunction
@@ -290,11 +320,49 @@ function! s:GetGitlabPrivateTokenFromGlobalOrInteractive()
     try
         let l:gitlab_private_token = s:GetGitlabPrivateTokenFromGlobal()
     catch /gitlab_private_token variable does not exist/
-        let l:gitlab_private_token = input("Insert gitlab private token: ")
+        let l:gitlab_private_token = s:GetWithCache('gitlab private token')
     endtry
     return l:gitlab_private_token
 endfunction
 " s:GetGitlabPrivateTokenFromGlobalOrInteractive }}}
+"
+" s:GetWithCache {{{
+""
+" Get the needed argument using the cache as hint for the user.
+"
+" This function will ask the user for the given value. In case the value is
+" already in the cache, it will let the user an option to not insert it, and use
+" the value from the cache instead.
+" After the function will get the new value from the user, it will update the
+" cache with this value.
+function! s:GetWithCache(key)
+    if has_key(s:cache, a:key)
+        let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
+    else
+        let l:current_value = input(printf(s:insert_string_without_default, a:key))
+    endif
+    let s:cache[a:key] = l:current_value
+    return l:current_value
+endfunction
+" s:GetWithCache }}}
+
+" s:InputWithDefault {{{
+""
+" Get the value for the given value, when there is a default value for the
+" wanted information.
+" This function will ask the user to insert the value for the key, prompting it
+" with a default value from the last time he inserted such value.
+function! s:InputWithDefault(key, default)
+    let l:current_value = input(printf(
+                \ s:insert_string_with_default,
+                \ a:key,
+                \ a:default))
+    if empty(l:current_value)
+        return a:default
+    endif
+    return l:current_value
+endfunction
+" s:InputWithDefault }}}
 
 " s:GetGitlabPrivateTokenFromGlobal {{{
 ""
