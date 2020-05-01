@@ -275,8 +275,8 @@ released in versions later than the planned one (except for special cases).
 - [x] Add general discussion threads ([#3][i3])
 - [x] Add code discussion threads ([#4][i4])
 - [x] Add Plugin default parameters ([#14][i14])
-- [ ] Create Plugin documentation ([#5][i5])
-- [ ] Release v0.1 ([#6][i6])
+- [x] Create Plugin documentation ([#5][i5])
+- [x] Release v0.1 ([#6][i6])
 
 ### Release v0.2
 - [ ] Change comments to use temporary buffers ([#7][i7])
