@@ -22,6 +22,14 @@ endif
 " Once all the arguments are inserted, the comment will be added to the gitlab
 " MR.
 "
+" @usage [body]
+" Add a comment into a gitlab MR. In this form, the body of the comment will be
+" according to the parameter. All the other arguments must be present in the
+" cache, and they will be used from there.
+" In case there are missing arguments, an error will be printed to the screen.
+" In order to fill the arguments in the cache, @command(MRInterfaceSetCache) can
+" be used.
+"
 " @usage [body] [project_id] [merge_request_id]
 " Add a comment to gitlab. In this form, the comment that will be added will
 " have all the arguments as given from the ex-command.
@@ -40,6 +48,14 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 " the needed arguments during the command run and add them as you insert them).
 " Once all the arguments are inserted, the new discussion thread will be added
 " to the gitlab MR.
+"
+" @usage [body]
+" Add a general discussion thread a gitlab MR. In this form, the body of the
+" general discussion thread will be according to the parameter. All the other
+" arguments must be present in the cache, and they will be used from there.
+" In case there are missing arguments, an error will be printed to the screen.
+" In order to fill the arguments in the cache, @command(MRInterfaceSetCache) can
+" be used.
 "
 " @usage [body] [project_id] [merge_request_id]
 " Add a general discussion thread to gitlab. In this form, the general

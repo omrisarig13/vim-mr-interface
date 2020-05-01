@@ -367,6 +367,32 @@ function! s:InteractiveGetGitlabAutentication()
 endfunction
 " s:InteractiveGetGitlabAutentication }}}h
 
+" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddGeneralDiscussionThreadWithBody that get the
+" argument as a list and passes it to the regular function.
+function! s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter(
+            \ arguments_list)
+    return s:AddGeneralDiscussionThreadWithBody(a:arguments_list[0])
+endfunction
+" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter }}}
+
+" s:AddGeneralDiscussionThreadWithBody {{{
+""
+" Add the given comment into the given gitlab's MR.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+function! s:AddGeneralDiscussionThreadWithBody(discussion_thread_body)
+    call s:VerifyInCache(['project id', 'merge request id'])
+
+    return s:AddGeneralDiscussionThread(
+        \ a:discussion_thread_body,
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddGeneralDiscussionThreadWithBody }}}
+
 " s:AddGeneralDiscussionThreadListArgumentAdapter {{{
 ""
 " An adapter to the function of s:AddGeneralDiscussionThread that gets
@@ -530,6 +556,47 @@ function! s:AddCommentListArgumentAdapter(arguments_list)
         \ a:arguments_list[2])
 endfunction
 " s:AddCommentListArgumentAdapter }}}
+
+" s:AddCommentWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddCommentWithBody that get the argument as
+" a list and passes it to the regular function.
+function! s:AddCommentWithBodyListArgumentAdapter(arguments_list)
+    return s:AddCommentWithBody(a:arguments_list[0])
+endfunction
+" s:AddCommentWithBodyListArgumentAdapter }}}
+
+" s:AddCommentWithBody {{{
+""
+" Add a new comment with the given body.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+function! s:AddCommentWithBody(comment_body)
+    call s:VerifyInCache(['project id', 'merge request id'])
+
+    return s:AddComment(
+        \ a:comment_body,
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddCommentWithBody }}}
+
+" s:VerifyInCache {{{
+""
+" Verify that all the keys from the list exists in the cache.
+" @throws String Error in case one (or more) of the keys are not part of the
+"         cache.
+function! s:VerifyInCache(keys)
+    for l:current_key in a:keys
+        if empty(s:cache[l:current_key])
+            throw printf(
+                \ "Missing argument in cache. Key '%s' should be in cache.",
+                \ l:current_key)
+        endif
+    endfor
+endfunction
+" s:VerifyInCache }}}
 
 " s:AddComment {{{
 ""
@@ -795,8 +862,9 @@ function! mr_interface#AddComment(...)
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
-            \ 3: function("s:AddCommentListArgumentAdapter"),
-            \ 4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
+            \  1: function("s:AddCommentWithBodyListArgumentAdapter"),
+            \  3: function("s:AddCommentListArgumentAdapter"),
+            \  4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
@@ -817,8 +885,9 @@ function! mr_interface#AddGeneralDiscussionThread(...)
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
-            \ 3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
-            \ 4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
+            \  1: function("s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter"),
+            \  3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
+            \  4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
