@@ -74,3 +74,22 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 " private_token is inserted as well. When run with this form, the private token
 " that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDiscussionThread(<f-args>)
+
+""
+" @usage
+" Reset the cache of the plugin.
+" TODO: Add a link to another section, explaining the basic information about
+" how the cache of the plugin works.
+command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
+
+""
+" @usage
+" Set all the keys in the cache, interactively.
+" This function will ask the user to insert values for all the keys of the
+" cache. This can be used in order to set all the values of the cache in the
+" start, and from there on just count on that they will stay the same.
+" This function is interactive, and it doesn't have non-interactive option.
+"
+" TODO: Add a link to another section, explaining the basic information about
+" how the cache of the plugin works.
+command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()

@@ -31,16 +31,25 @@ let s:insert_string_with_default = "Insert value for %s [%s]: "
 " @private
 let s:plugin = maktaba#plugin#Get('vim-mr-interface')
 
-""
-" A cache that will be used to save old values inserted by the user.
-"
-" Many of the command in the plugin will run a lot of times with most of the
-" same arguments. In order to make it easier for the user to use the plugin, the
-" plugin will maintain a simple cache with the last inserted value in any such
-" field.
-" @private
 if !exists("s:cache")
-    let s:cache = {}
+    ""
+    " A cache that will be used to save old values inserted by the user.
+    "
+    " Many of the command in the plugin will run a lot of times with most of the
+    " same arguments. In order to make it easier for the user to use the plugin,
+    " the plugin will maintain a simple cache with the last inserted value in
+    " any such field.
+    "
+    " The values of the cache are being set here explicitly on purpose, in order
+    " to let functions iterate over them if needed, even when they are not set.
+    " @private
+    let s:cache = {
+                \ 'base sha': '',
+                \ 'start sha': '',
+                \ 'head sha': '',
+                \ 'project id': '',
+                \ 'merge request id': '',
+                \ 'gitlab private token': ''}
 endif
 
 " Global Variables }}}
@@ -162,7 +171,7 @@ function! s:AddCodeDiscussionThreadWithPrivateToken(
     let l:content['body'] = a:comment_body
     return s:RunGitlabAction(
         \ l:content,
-        \ {'private_token':a:gitlab_private_token},
+        \ {'private_token': a:gitlab_private_token},
         \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
         \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
 endfunction
@@ -336,7 +345,7 @@ endfunction
 " After the function will get the new value from the user, it will update the
 " cache with this value.
 function! s:GetWithCache(key)
-    if has_key(s:cache, a:key)
+    if !empty(s:cache[a:key])
         let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
     else
         let l:current_value = input(printf(s:insert_string_without_default, a:key))
@@ -777,6 +786,26 @@ function! mr_interface#AddCodeDiscussionThread(...)
     endtry
 endfunction
 " mr_interface#AddCodeDiscussionThread }}}
+
+" mr_interface#ResetCache {{{
+""
+" Reset the cache of the plugin.
+function! mr_interface#ResetCache()
+    " This command will map all the currently existing variables of the cache to
+    " be empty strings (which are their default values.
+    call map(s:cache, '""')
+endfunction
+" mr_interface#ResetCache }}}
+
+" mr_interface#SetCache {{{
+""
+" Set all the keys in the cache according to the values inserted by the user.
+function! mr_interface#SetCache()
+    for l:current_key in keys(s:cache)
+        call s:GetWithCache(l:current_key)
+    endfor
+endfunction
+" mr_interface#SetCache }}}
 
 " Exported Functions }}}
 
