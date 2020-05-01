@@ -109,3 +109,16 @@ command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
 " TODO: Add a link to another section, explaining the basic information about
 " how the cache of the plugin works.
 command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
+
+""
+" @usage [key] [value]
+" Add the given [value] into the cache as the value for [key].
+" This command can be used to set only a specific key in the cache (differently
+" from the command of @command(MRInterfaceSetCache) that updates all the
+" values in the cache).
+" The value of [key] must be a valid entry in the cache. If it won't be valid
+" value from the cache, the command with fail with proper error.
+"
+" TODO: Add a link to another section, explaining the basic information about
+" how the cache of the plugin works.
+command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCache(<f-args>)

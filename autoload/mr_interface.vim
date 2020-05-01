@@ -42,6 +42,11 @@ if !exists("s:cache")
     "
     " The values of the cache are being set here explicitly on purpose, in order
     " to let functions iterate over them if needed, even when they are not set.
+    "
+    " This is not a configurable variable on purpose. The user should change
+    " this variable only by using the specific callbacks of the plugin, it
+    " should not be changed directly from the user, since it might break things
+    " in the plugin.
     " @private
     let s:cache = {
                 \ 'base sha': '',
@@ -844,6 +849,29 @@ function! s:RunCommandByNumberOfArguments(command_line_arguments, commands)
 endfunction
 " s:RunCommandByNumberOfArguments }}}
 
+" s:UpdateValueInCacheListArgumentAdapter {{{
+""
+" Call the function s:UpdateValueInCache with the proper parameters.
+function! s:UpdateValueInCacheListArgumentAdapter(arguments_list)
+    return s:UpdateValueInCache(a:arguments_list[0], a:arguments_list[1])
+endfunction
+" s:UpdateValueInCacheListArgumentAdapter }}}
+
+" s:UpdateValueInCache {{{
+""
+" Update the given argument in the cache.
+" @throws String Error in case the key does not present in the cache.
+function! s:UpdateValueInCache(key, value)
+    " Validate the key is in the cache.
+    if !has_key(s:cache, a:key)
+        throw printf("Key '%s' does not exist in the cache", a:key)
+    endif
+
+    " Update the key.
+    let s:cache[a:key] = a:value
+endfunction
+" s:UpdateValueInCache }}}
+
 " Internal Functions }}}
 
 " Exported Functions {{{
@@ -935,6 +963,23 @@ function! mr_interface#SetCache()
     endfor
 endfunction
 " mr_interface#SetCache }}}
+
+" mr_interface#UpdateValueInCache {{{
+""
+" Set the given value in the cache.
+" The function gets a key and a value. It sets the value to the key inside the
+" cache. In case the key is not a valid key in the cache, an error will be
+" printed to the screen.
+function! mr_interface#UpdateValueInCache(...)
+    try
+        call s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+endfunction
+" mr_interface#UpdateValueInCache }}}
 
 " Exported Functions }}}
 

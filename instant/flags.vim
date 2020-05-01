@@ -32,3 +32,7 @@ call s:plugin.Flag('gitlab_server_address', 'gitlab.com')
 " information. If it will stay empty, the user will be prompt to add the private
 " token every time he runs any command.
 call s:plugin.Flag('gitlab_private_token', '')
+
+" TODO: Add documentation about how to set spcefic values in the cache, even
+" though it is not a flag. This is part of the connfiguration that the user can
+" change, but it is not a regular flag.
