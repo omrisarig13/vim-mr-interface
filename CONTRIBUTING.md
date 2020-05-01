@@ -45,7 +45,13 @@ the code:
       opening and the closing parenthesis.
       * Add those markers to big parts of files if you add more then mere
         functions.
-    * Document your function using vimdoc style.
+    * Document your function using [vimdoc][vimdoc] style.
 * In case you change the interface of the plugin, be sure to add explanation
     about it in the [readme](README.md).
+* Do not change the helpfile directly, it is automatically generated from the
+    code. In case you change want to change the documentation there, change the
+    documentation in the code and rerun [vimdoc][vimdoc].
+* In case you change the documentation that is part of the helpfile, make sure
+    to run [vimdoc][vimdoc] again to re-generate the helpfile.
 
+[vimdoc]: https://github.com/google/vimdoc
