@@ -1,0 +1,258 @@
+*vim-mr-interface.txt*
+                                                            *vim-mr-interface*
+
+==============================================================================
+CONTENTS                                           *vim-mr-interface-contents*
+  1. Introduction.....................................|vim-mr-interface-intro|
+  2. Configuration...................................|vim-mr-interface-config|
+      1. Cache Flags............................|vim-mr-interface-cache_flags|
+  3. Commands......................................|vim-mr-interface-commands|
+  4. Cache............................................|vim-mr-interface-cache|
+
+==============================================================================
+INTRODUCTION                                          *vim-mr-interface-intro*
+
+This plugin is a plugin that will let you write CRs on gitlab MRs directly
+from vim.
+
+The plugin introduces some commands that can be used to send comments directly
+from your vim into an MR in gitlab, and have a cache mechanism that will save
+your information and let you send lots of commands one after the other without
+setting these variables over and over again.
+
+==============================================================================
+CONFIGURATION                                        *vim-mr-interface-config*
+
+vim-mr-interface is configured using maktaba flags. It defines some flags that
+can be configured using |Glaive| or any other plugin manager that uses the
+maktaba setting API. It also supports entirely disabling commands from being
+defined by clearing the plugin[commands] flag.
+
+Basic example of setting a |Glaive| flag is:
+
+  Glaive vim-mr-interface gitlab_private_token="12345678910111213141"
+
+For full information about how to configure the flags, you can read Glaive
+documentation: https://github.com/google/vim-glaive/blob/master/README.md.
+
+                                      *vim-mr-interface:gitlab_server_address*
+Save the address of the gitlab server to run the commands on.
+Default: 'gitlab.com' `
+
+                                       *vim-mr-interface:gitlab_private_token*
+Save the private token to use when authenticating with gitlab. This flag
+should be defined by the user with the proper gitlab authentication
+information. If it will stay empty, the user will be prompt to add the private
+token every time he runs any command.
+Default: '' `
+
+                                 *vim-mr-interface:automatically_insert_cache*
+Save whether the plugin should use the cache value instantly, or always ask
+the user to insert the needed values.
+Default: v:true `
+
+                                           *vim-mr-interface:plugin[commands]*
+Configures whether plugin/commands.vim should be loaded.
+Default: 1 `
+
+==============================================================================
+CACHE FLAGS                                     *vim-mr-interface-cache_flags*
+
+The values of the cache flags can be also used when configuring the plugin.
+However, you probably don't want that.
+
+In case you do want to configure the cache values, you can call
+|:MRInterfaceUpdateValueInCache| from anyplace in your vimrc.
+
+This way, you will be able to set the values of the cache in load time of vim,
+exactly as you would have done for any other configuration flags. The possible
+values of the configuration flags are:
+  * 'base sha'
+  * 'start sha'
+  * 'head sha'
+  * 'project id'
+  * 'merge request id'
+  * 'gitlab private token'
+
+For example:
+
+  MRInterfaceUpdateValueInCache 'merge request id' 4
+
+For more information about the cache mechanism, see |vim-mr-interface-cache|.
+
+==============================================================================
+COMMANDS                                           *vim-mr-interface-commands*
+
+:MRInterfaceAddComment                                *:MRInterfaceAddComment*
+  Add a comment into a gitlab MR. If run without arguments, this function
+  works interactively (asks you for all the needed arguments during the
+  command run and add them as you insert them). Once all the arguments are
+  inserted, the comment will be added to the gitlab MR.
+
+
+:MRInterfaceAddComment [body]
+  Add a comment into a gitlab MR. In this form, the body of the comment will
+  be according to the parameter. All the other arguments must be present in
+  the cache, and they will be used from there. In case there are missing
+  arguments, an error will be printed to the screen. In order to fill the
+  arguments in the cache, |:MRInterfaceSetCache| can be used.
+
+
+:MRInterfaceAddComment [body] [project_id] [merge_request_id]
+  Add a comment to gitlab. In this form, the comment that will be added will
+  have all the arguments as given from the ex-command.
+
+
+:MRInterfaceAddComment [body] [private_token] [project_id] [merge_request_id]
+  This is the same as the previous form except that in this form the
+  [private_token] is inserted as well. When run with this form, the private
+  token that will be inserted will be used, ignoring the global private token.
+
+:MRInterfaceAddGeneralDiscussionThread
+                                      *:MRInterfaceAddGeneralDiscussionThread*
+  Add a general discussion thread into a gitlab MR. A general discussion
+  thread is the same as comment, but it can be resolved. If run without
+  arguments, this function works interactively (asks you for all the needed
+  arguments during the command run and add them as you insert them). Once all
+  the arguments are inserted, the new discussion thread will be added to the
+  gitlab MR.
+
+
+:MRInterfaceAddGeneralDiscussionThread [body]
+  Add a general discussion thread a gitlab MR. In this form, the body of the
+  general discussion thread will be according to the parameter. All the other
+  arguments must be present in the cache, and they will be used from there. In
+  case there are missing arguments, an error will be printed to the screen. In
+  order to fill the arguments in the cache, |:MRInterfaceSetCache| can be
+  used.
+
+
+:MRInterfaceAddGeneralDiscussionThread [body] [project_id] [merge_request_id]
+  Add a general discussion thread to gitlab. In this form, the general
+  discussion thread that will be added will have all the arguments as given
+  from the ex-command.
+
+
+:MRInterfaceAddGeneralDiscussionThread [body] [private_token] [project_id]
+  [merge_request_id]
+  This is the same as the previous form except that in this form the
+  [private_token] is inserted as well. When run with this form, the private
+  token that will be inserted will be used, ignoring the global private token.
+
+:MRInterfaceAddCodeDiscussionThread      *:MRInterfaceAddCodeDiscussionThread*
+  Add a code discussion thread into a gitlab MR. A code discussion thread is a
+  resolvable comment that is linked to specific lines in a file in the MR. If
+  run without arguments, this function works interactively (asks you for all
+  the needed arguments during the command run and add them as you insert
+  them). Once all the arguments are inserted, the new discussion thread will
+  be added to the gitlab MR.
+
+
+:MRInterfaceAddCodeDiscussionThread [body] [base_sha] [start_sha] [head_sha]
+  [old_path] [new_path] [old_line] [new_line] [project_id] [merge_request_id]
+  Add a code discussion thread to gitlab. In this form, the discussion thread
+  that will be added will have all the arguments as given from the ex-command.
+  This command is filled with a lot of arguments. Almost always it will be
+  easier to use the interactive form of this command. (Here mainly for
+  automations if needed).
+
+
+:MRInterfaceAddCodeDiscussionThread [body] [base_sha] [start_sha] [head_sha]
+  [old_path] [new_path] [old_line] [new_line] [gitlab_private_token]
+  [project_id] [merge_request_id]
+  This is the same as the previous form except that in this form the
+  [private_token] is inserted as well. When run with this form, the private
+  token that will be inserted will be used, ignoring the global private token.
+
+:MRInterfaceResetCache                                *:MRInterfaceResetCache*
+  Reset the cache of the plugin.
+
+  For more information about the cache mechanism, see
+  |vim-mr-interface-cache|.
+
+:MRInterfaceSetCache                                    *:MRInterfaceSetCache*
+  Set all the keys in the cache, interactively. This function will ask the
+  user to insert values for all the keys of the cache. This can be used in
+  order to set all the values of the cache in the start, and from there on
+  just count on that they will stay the same. This function is interactive,
+  and it doesn't have non-interactive option.
+
+  For more information about the cache mechanism, see
+  |vim-mr-interface-cache|.
+
+:MRInterfaceUpdateValueInCache [key] [value]  *:MRInterfaceUpdateValueInCache*
+  Add the given [value] into the cache as the value for [key]. This command
+  can be used to set only a specific key in the cache (differently from the
+  command of |:MRInterfaceSetCache| that updates all the values in the cache).
+  The value of [key] must be a valid entry in the cache. If it won't be valid
+  value from the cache, the command with fail with proper error.
+
+  For more information about the cache mechanism, see
+  |vim-mr-interface-cache|.
+
+==============================================================================
+CACHE                                                 *vim-mr-interface-cache*
+
+
+Whenever working on a gitlab MR, a lot of the parameters for many functions
+will stay the same for a sequence of commands.
+
+For example, whenever working on a single MR, all these arguments will stay
+the same across all the calls:
+  * The id of the merge request
+  * The id of the project
+  * The sha of the base commit in the MR
+  * The sha of the head commit in the MR
+  * The sha of the start commit in the MR
+
+Because all these arguments will stay the same, this plugin creates a cache
+mechanism that will save these arguments and set them for you.
+
+Whenever you will run one of the interactive commands for the first time, it
+will prompt you to insert all the arguments that it needs. This should be the
+only time that you inserts the constant arguments for this vim session. From
+now on, every command that will run will use the arguments that you have
+inserted originally. This will include only the arguments that should stay the
+same for the merge request, letting you change the variable that changes
+between different comments on the code.
+
+By default, you won't be bothered again with these arguments, however, it is
+configurable and can be changed. To see how it can be changed, see
+|vim-mr-interface:automatically_insert_cache|. If this flag will be false, the
+values from the cache won't be set automatically, but they will be the default
+values for their parameters, letting you not insert them (by setting empty
+value, or a value of `null`).
+
+In case you had made a mistake, or want to update a single argument in the
+cache, you can use the command of |:MRInterfaceUpdateValueInCache|.
+
+In case you want to reset the cache completely, use |:MRInterfaceResetCache|.
+
+And, in case you don't want to set the cache with a command, but just set all
+its values upfront, you can use the command of |:MRInterfaceSetCache|
+
+The whole cache is per vim session. It means that once you have exited your
+vim session, the cache will be deleted, and there wouldn't be any way to
+retrieve it.
+
+
+Why use cache and not global variables?
+
+All the arguments that are part of the cache are arguments that will be the
+same across some sequental calls to the various plugin's functions, but won't
+be the same across different vim sessions. For example, the MR number will
+stay the same as long as you work on the same gitlab MR, but once you have
+finished with it, you wouldn't use the same number again. Moreover, in case
+you work on more than one gitlab project at a time, you will need to have
+different values for the project's id during this time. From this reason, it
+is wrong to set these variables as globals (they change too often and can't be
+the same across all the vim's instances). The solution of cache will work best
+to help complete you and set the values for you, without continuing to use the
+old values when they no longer makes sense.
+
+In case you don't want to use the values as cache, you can just use them as
+regular global values by setting them explicitly in your vimrc according to
+the instructions from here: |vim-mr-interface-cache_flags|
+
+
+vim:tw=78:ts=8:ft=help:norl:

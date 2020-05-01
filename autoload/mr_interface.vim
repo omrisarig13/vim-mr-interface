@@ -47,6 +47,11 @@ if !exists("s:cache")
     " this variable only by using the specific callbacks of the plugin, it
     " should not be changed directly from the user, since it might break things
     " in the plugin.
+    "
+    " Whenever you change any of the values here, make sure to update the
+    " documentation in the flags file as well. This is duplication and ugly, but
+    " I couldn't find a way to make vimdoc include only part of the file, so it
+    " will stay there for now.
     " @private
     let s:cache = {
                 \ 'base sha': '',

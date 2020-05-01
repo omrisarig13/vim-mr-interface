@@ -36,8 +36,8 @@ endif
 "
 " @usage [body] [private_token] [project_id] [merge_request_id]
 " This is the same as the previous form except that in this form the
-" private_token is inserted as well. When run with this form, the private token
-" that will be inserted will be used, ignoring the global private token.
+" [private_token] is inserted as well. When run with this form, the private
+" token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 
 ""
@@ -64,8 +64,8 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 "
 " @usage [body] [private_token] [project_id] [merge_request_id]
 " This is the same as the previous form except that in this form the
-" private_token is inserted as well. When run with this form, the private token
-" that will be inserted will be used, ignoring the global private token.
+" [private_token] is inserted as well. When run with this form, the private
+" token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGeneralDiscussionThread(<f-args>)
 
 ""
@@ -87,15 +87,15 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 "
 " @usage [body] [base_sha] [start_sha] [head_sha] [old_path] [new_path] [old_line] [new_line] [gitlab_private_token] [project_id] [merge_request_id]
 " This is the same as the previous form except that in this form the
-" private_token is inserted as well. When run with this form, the private token
-" that will be inserted will be used, ignoring the global private token.
+" [private_token] is inserted as well. When run with this form, the private
+" token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDiscussionThread(<f-args>)
 
 ""
 " @usage
 " Reset the cache of the plugin.
-" TODO: Add a link to another section, explaining the basic information about
-" how the cache of the plugin works.
+"
+" For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
 
 ""
@@ -106,8 +106,7 @@ command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
 " start, and from there on just count on that they will stay the same.
 " This function is interactive, and it doesn't have non-interactive option.
 "
-" TODO: Add a link to another section, explaining the basic information about
-" how the cache of the plugin works.
+" For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
 
 ""
@@ -119,6 +118,5 @@ command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
 " The value of [key] must be a valid entry in the cache. If it won't be valid
 " value from the cache, the command with fail with proper error.
 "
-" TODO: Add a link to another section, explaining the basic information about
-" how the cache of the plugin works.
+" For more information about the cache mechanism, see @section(cache).
 command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCache(<f-args>)
