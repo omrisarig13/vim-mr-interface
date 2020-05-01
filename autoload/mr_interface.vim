@@ -93,6 +93,16 @@ function! s:RemoveStringQuotes(string)
 endfunction
 " s:RemoveStringQuotes }}}
 
+" s:InteractiveAddCodeDiscussionThreadListArgumentAdapter {{{
+""
+" A adapter function for s:InteractiveAddCodeDiscussionThread that get a list as
+" argument and calls the original function.
+function! s:InteractiveAddCodeDiscussionThreadListArgumentAdapter(
+            \ list_argument)
+    return s:InteractiveAddCodeDiscussionThread()
+endfunction
+" s:InteractiveAddCodeDiscussionThreadListArgumentAdapter }}}
+
 " s:InteractiveAddCodeDiscussionThread {{{
 ""
 " Add a code discussion thread to a gitlab MR interactively.
@@ -114,6 +124,25 @@ function! s:InteractiveAddCodeDiscussionThread()
         \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
 endfunction
 " s:InteractiveAddCodeDiscussionThread }}}
+
+" s:AddCodeDiscussionThreadListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCodeDiscussionThread that get the arguments
+" as a list and calls the original function with the right arguments.
+function! s:AddCodeDiscussionThreadListArgumentAdapter(list_arguments)
+    return s:AddCodeDiscussionThread(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5],
+                \ a:list_arguments[6],
+                \ a:list_arguments[7],
+                \ a:list_arguments[8],
+                \ a:list_arguments[9])
+endfunction
+" s:AddCodeDiscussionThreadListArgumentAdapter }}}
 
 " s:AddCodeDiscussionThread {{{
 ""
@@ -143,6 +172,28 @@ function! s:AddCodeDiscussionThread(
                 \ a:merge_request_id)
 endfunction
 " s:AddCodeDiscussionThread }}}
+
+" s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of
+" s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter that get the
+" arguments as a list and calls the original function with the right arguments.
+function! s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter(
+            \ list_argument)
+    return s:AddCodeDiscussionThreadWithPrivateToken(
+                \ a:list_argument[0],
+                \ a:list_argument[1],
+                \ a:list_argument[2],
+                \ a:list_argument[3],
+                \ a:list_argument[4],
+                \ a:list_argument[5],
+                \ a:list_argument[6],
+                \ a:list_argument[7],
+                \ a:list_argument[8],
+                \ a:list_argument[9],
+                \ a:list_argument[10])
+endfunction
+" s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter }}}
 
 " s:AddCodeDiscussionThreadWithPrivateToken {{{
 ""
@@ -247,6 +298,16 @@ function! s:AddIfNotEmpty(dictionary_to_add, new_key, new_value)
 endfunction
 " s:AddIfNotEmpty }}}
 
+" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter {{{
+""
+" An adapter to the function of s:InteractiveAddGeneralDiscussionThread that get
+" an argument of list and discards it.
+function! s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter(
+            \ list_alguments)
+    return s:InteractiveAddGeneralDiscussionThread()
+endfunction
+" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter }}}
+
 " s:InteractiveAddGeneralDiscussionThread {{{
 ""
 " Add a general discussion thread to a gitlab MR interactively.
@@ -305,6 +366,18 @@ function! s:InteractiveGetGitlabAutentication()
     return {'private_token': l:private_token}
 endfunction
 " s:InteractiveGetGitlabAutentication }}}h
+
+" s:AddGeneralDiscussionThreadListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddGeneralDiscussionThread that gets
+" the arguments as a list.
+function! s:AddGeneralDiscussionThreadListArgumentAdapter(arguments_list)
+    return s:AddGeneralDiscussionThread(
+                \ a:arguments_list[0],
+                \ a:arguments_list[1],
+                \ a:arguments_list[2])
+endfunction
+" s:AddGeneralDiscussionThreadListArgumentAdapter }}}
 
 " s:AddGeneralDiscussionThread {{{
 ""
@@ -386,6 +459,20 @@ function! s:GetGitlabPrivateTokenFromGlobal()
 endfunction
 " s:GetGitlabPrivateTokenFromGlobal }}}
 
+" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddGeneralDiscussionThreadWithPrivateToken
+" that gets the arguments as a list.
+function! s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter(
+            \ arguments_list)
+    return s:AddGeneralDiscussionThreadWithPrivateToken(
+                \ a:arguments_list[0],
+                \ a:arguments_list[1],
+                \ a:arguments_list[2],
+                \ a:arguments_list[3])
+endfunction
+" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter }}}
+
 " s:AddGeneralDiscussionThreadWithPrivateToken {{{
 ""
 " Add the given comment into the given gitlab's MR.
@@ -401,6 +488,15 @@ function! s:AddGeneralDiscussionThreadWithPrivateToken(
         \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
 endfunction
 " s:AddGeneralDiscussionThreadWithPrivateToken }}}
+
+" s:InteractiveAddCommentListArgumentAdapter {{{
+""
+" An adapter to the function of s:InteractiveAddComment that gets an argument of
+" list and discards it.
+function! s:InteractiveAddCommentListArgumentAdapter(arguments_list)
+    return s:InteractiveAddComment()
+endfunction
+" s:InteractiveAddCommentListArgumentAdapter }}}
 
 " s:InteractiveAddComment {{{
 ""
@@ -423,6 +519,18 @@ function! s:InteractiveAddComment()
 endfunction
 " s:InteractiveAddComment }}}
 
+" s:AddCommentListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddComment that gets the arguments as a list
+" instead of as separated arguments.
+function! s:AddCommentListArgumentAdapter(arguments_list)
+    return s:AddComment(
+        \ a:arguments_list[0],
+        \ a:arguments_list[1],
+        \ a:arguments_list[2])
+endfunction
+" s:AddCommentListArgumentAdapter }}}
+
 " s:AddComment {{{
 ""
 " Add the given comment into the given gitlab's MR.
@@ -437,6 +545,20 @@ function! s:AddComment(
                 \ a:merge_request_id)
 endfunction
 " s:AddComment }}}
+
+" s:AddCommentWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCommentWithPrivateToken that gets the
+" arguments as a list instead of as separated arguments.
+function! s:AddCommentWithPrivateTokenListArgumentAdapter(
+            \ arguments_list)
+    return s:AddCommentWithPrivateToken(
+        \ a:arguments_list[0],
+        \ a:arguments_list[1],
+        \ a:arguments_list[2],
+        \ a:arguments_list[3])
+endfunction
+" s:AddCommentWithPrivateTokenListArgumentAdapter }}}
 
 " s:AddCommentWithPrivateToken {{{
 ""
@@ -628,6 +750,33 @@ function! s:new_line_echom(message)
 endfunction
 " s:new_line_echom }}}
 
+" s:RunCommandByNumberOfArguments {{{
+""
+" Check how many arguments were inserted in the command line, and run the
+" command with the appropriate number of parameters.
+" @throws String Error in case there isn't any command for the wanted number of
+"         arguments.
+"
+" [command_line_arguments] - The arguments derictly from the command (using
+"                            <f-args>)
+" [commands] - All the possible commands in a dict, where the number of
+"              arguments is the key and the wanted function is the value.
+function! s:RunCommandByNumberOfArguments(command_line_arguments, commands)
+    " Get the real arguments.
+    let l:real_arguments = s:GetArgumentsFromCommandLine(
+                \ a:command_line_arguments)
+    let l:number_of_arguments = len(l:real_arguments)
+
+    " If the command in the dictionary, run it.
+    if has_key(a:commands, l:number_of_arguments)
+        return a:commands[l:number_of_arguments](l:real_arguments)
+    else
+        " The command is not in the dictionary, raise an error.
+        throw("Invalid number of arguments")
+    endif
+endfunction
+" s:RunCommandByNumberOfArguments }}}
+
 " Internal Functions }}}
 
 " Exported Functions {{{
@@ -643,32 +792,11 @@ endfunction
 " printed to the screen.
 function! mr_interface#AddComment(...)
     try
-        " Get the real arguments.
-        let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
-
-        " Call the actual function.
-        if len(l:real_arguments) == 0
-            call s:InteractiveAddComment()
-        elseif len(l:real_arguments) == 3
-            " Run the command using the global private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddComment(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2])
-        elseif len(l:real_arguments) == 4
-            " Run the command using the custom private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddCommentWithPrivateToken(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2],
-                \ l:real_arguments[3])
-        else
-            throw("Invalid number of arguments to add command")
-        endif
+        call s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
+            \ 3: function("s:AddCommentListArgumentAdapter"),
+            \ 4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
@@ -684,40 +812,13 @@ endfunction
 " arguments. In case it run with all the arguments, the discussion thread will
 " just be added to the MR. In case it was run with invalid arguments, an error
 " will be printed to the screen.
-"
-" This function looks a lot like the function mr_interface#AddComment. However,
-" they should not be merged into a single action. These actions depend on
-" different interfaces of gitlab. Since these interfaces can be changed
-" differently, these commands won't look the same, and the functions will have
-" to change. It is better to keep these commands separated.
 function! mr_interface#AddGeneralDiscussionThread(...)
     try
-        " Get the real arguments.
-        let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
-
-        " Call the actual function.
-        if len(l:real_arguments) == 0
-            call s:InteractiveAddGeneralDiscussionThread()
-        elseif len(l:real_arguments) == 3
-            " Run the command using the global private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddGeneralDiscussionThread(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2])
-        elseif len(l:real_arguments) == 4
-            " Run the command using the custom private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddGeneralDiscussionThreadWithPrivateToken(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2],
-                \ l:real_arguments[3])
-        else
-            throw("Invalid number of arguments to add command")
-        endif
+        call s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
+            \ 3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
+            \ 4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
@@ -733,54 +834,13 @@ endfunction
 " arguments. In case it run with all the arguments, the discussion thread will
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
-"
-" This function looks a lot like the function mr_interface#AddComment. However,
-" they should not be merged into a single action. These actions depend on
-" different interfaces of gitlab. Since these interfaces can be changed
-" differently, these commands won't look the same, and the functions will have
-" to change. It is better to keep these commands separated.
 function! mr_interface#AddCodeDiscussionThread(...)
     try
-        " Get the real arguments.
-        let l:real_arguments = s:GetArgumentsFromCommandLine(a:000)
-
-        " Call the actual function.
-        if len(l:real_arguments) == 0
-            call s:InteractiveAddCodeDiscussionThread()
-        elseif len(l:real_arguments) == 10
-            " Run the command using the global private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddCodeDiscussionThread(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2],
-                \ l:real_arguments[3],
-                \ l:real_arguments[4],
-                \ l:real_arguments[5],
-                \ l:real_arguments[6],
-                \ l:real_arguments[7],
-                \ l:real_arguments[8],
-                \ l:real_arguments[9])
-        elseif len(l:real_arguments) == 11
-            " Run the command using the custom private token.
-            " TODO: I could not find a way to unpack the list automatically. Try to
-            " research it a bit more in the future.
-            call s:AddCodeDiscussionThreadWithPrivateToken(
-                \ l:real_arguments[0],
-                \ l:real_arguments[1],
-                \ l:real_arguments[2],
-                \ l:real_arguments[3],
-                \ l:real_arguments[4],
-                \ l:real_arguments[5],
-                \ l:real_arguments[6],
-                \ l:real_arguments[7],
-                \ l:real_arguments[8],
-                \ l:real_arguments[9],
-                \ l:real_arguments[10])
-        else
-            throw("Invalid number of arguments to add command")
-        endif
+        call s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
+            \ 10: function("s:AddCodeDiscussionThreadListArgumentAdapter"),
+            \ 11: function("s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
