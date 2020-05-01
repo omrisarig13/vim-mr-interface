@@ -33,6 +33,11 @@ call s:plugin.Flag('gitlab_server_address', 'gitlab.com')
 " token every time he runs any command.
 call s:plugin.Flag('gitlab_private_token', '')
 
+""
+" Save whether the plugin should use the cache value instantly, or always ask
+" the user to insert the needed values.
+call s:plugin.Flag('automatically_insert_cache', v:true)
+
 " TODO: Add documentation about how to set spcefic values in the cache, even
 " though it is not a flag. This is part of the connfiguration that the user can
 " change, but it is not a regular flag.

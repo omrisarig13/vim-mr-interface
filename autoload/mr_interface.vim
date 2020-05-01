@@ -450,7 +450,11 @@ endfunction
 " cache with this value.
 function! s:GetWithCache(key)
     if !empty(s:cache[a:key])
-        let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
+        if s:plugin.Flag('automatically_insert_cache')
+            let l:current_value = s:cache[a:key]
+        else
+            let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
+        endif
     else
         let l:current_value = input(printf(s:insert_string_without_default, a:key))
     endif
