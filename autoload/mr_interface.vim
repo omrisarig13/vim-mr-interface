@@ -758,7 +758,6 @@ endfunction
 function! s:CreateGitlabCommandAddress(
             \ merge_request_information,
             \ gitlab_action)
-    " TODO: Get the address of gitlab as well (for other gitlabs).
     return printf(
         \ "https://%s/api/v4/projects/%s/merge_requests/%s/%s?body=note",
         \ s:plugin.Flag('gitlab_server_address'),
