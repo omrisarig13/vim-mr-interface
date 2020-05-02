@@ -22,6 +22,11 @@ let s:insert_string_without_default = "Insert value for %s: "
 " @private
 let s:insert_string_with_default = "Insert value for %s [%s]: "
 
+""
+" The string for telling the user that a command is already in progress
+let s:command_in_progress_error = "Another command is running. Can't run "
+            \ . "multiple command at the same time"
+
 " Constant Global Variables }}}
 
 " Global Variables {{{
@@ -60,6 +65,15 @@ if !exists("s:cache")
                 \ 'project id': '',
                 \ 'merge request id': '',
                 \ 'gitlab private token': ''}
+endif
+
+if !exists("s:is_in_command")
+    ""
+    " v:true in case the plugin is in the middle of command, v:false otherwise.
+    " This is important because commands doesn't always end when the function
+    " returns (for example, when waiting for output from buffer), so this flag
+    " will make sure that commands aren't mangled together.
+    let s:is_in_command = v:false
 endif
 
 " Global Variables }}}
@@ -881,6 +895,30 @@ function! s:UpdateValueInCache(key, value)
 endfunction
 " s:UpdateValueInCache }}}
 
+" s:EnterCommand {{{
+""
+" Update the needed variables when entering a new command.
+" @throws String Error in case a command is already in progress.
+function! s:EnterCommand()
+    " Validate no other command running
+    if s:is_in_command
+        throw s:command_in_progress_error
+    endif
+
+    " Update the key.
+    let s:is_in_command = v:true
+endfunction
+" s:EnterCommand }}}
+
+" s:ExitCommand {{{
+""
+" Update the needed variables when exiting from a command that finished
+function! s:ExitCommand()
+    " Update the key.
+    let s:is_in_command = v:false
+endfunction
+" s:ExitCommand }}}
+
 " Internal Functions }}}
 
 " Exported Functions {{{
@@ -895,7 +933,10 @@ endfunction
 " added to the MR. In case it was run with invalid arguments, an error will be
 " printed to the screen.
 function! mr_interface#AddComment(...)
+    let l:should_finish_command = v:false
     try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
@@ -905,6 +946,9 @@ function! mr_interface#AddComment(...)
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#AddComment }}}
 
@@ -918,7 +962,10 @@ endfunction
 " just be added to the MR. In case it was run with invalid arguments, an error
 " will be printed to the screen.
 function! mr_interface#AddGeneralDiscussionThread(...)
+    let l:should_finish_command = v:false
     try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
@@ -928,6 +975,9 @@ function! mr_interface#AddGeneralDiscussionThread(...)
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#AddGeneralDiscussionThread }}}
 
@@ -941,7 +991,10 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThread(...)
+    let l:should_finish_command = v:false
     try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
@@ -950,6 +1003,9 @@ function! mr_interface#AddCodeDiscussionThread(...)
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#AddCodeDiscussionThread }}}
 
@@ -957,9 +1013,19 @@ endfunction
 ""
 " Reset the cache of the plugin.
 function! mr_interface#ResetCache()
-    " This command will map all the currently existing variables of the cache to
-    " be empty strings (which are their default values.
-    call map(s:cache, '""')
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        " This command will map all the currently existing variables of the cache to
+        " be empty strings (which are their default values.
+        call map(s:cache, '""')
+    catch /*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#ResetCache }}}
 
@@ -967,9 +1033,19 @@ endfunction
 ""
 " Set all the keys in the cache according to the values inserted by the user.
 function! mr_interface#SetCache()
-    for l:current_key in keys(s:cache)
-        call s:GetWithCache(l:current_key)
-    endfor
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        for l:current_key in keys(s:cache)
+            call s:GetWithCache(l:current_key)
+        endfor
+    catch /*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#SetCache }}}
 
@@ -980,13 +1056,19 @@ endfunction
 " cache. In case the key is not a valid key in the cache, an error will be
 " printed to the screen.
 function! mr_interface#UpdateValueInCache(...)
+    let l:should_finish_command = v:false
     try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
         call s:RunCommandByNumberOfArguments(
             \ a:000,
             \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
     catch /.*/
         call maktaba#error#Shout(v:exception)
     endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
 endfunction
 " mr_interface#UpdateValueInCache }}}
 
