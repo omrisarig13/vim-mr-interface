@@ -54,6 +54,23 @@ call s:plugin.Flag('gitlab_private_token', '')
 call s:plugin.Flag('automatically_insert_cache', v:true)
 
 ""
+" Save whether the plugin should create a buffer whenever it needs to read the
+" body of a message from the user, or get the body in the regular method.
+"
+" In is more convenient to read the body from a buffer and not from an input
+" method since the body will have multiple lines for lots of comments, and it is
+" impossible to add from the input command. Moreover, the body might be long,
+" and it is easier to write long text with vim's shortcuts in a buffer and not
+" inside the input command.
+call s:plugin.Flag('read_body_from_buffer', v:true)
+
+""
+" The height of the scratch buffer that will be created when inserting the body.
+"
+" This is relevant only in case the value of @flag(read_body_from_buffer).
+call s:plugin.Flag('body_buffer_height', 5)
+
+""
 " @section Cache Flags, cache_flags
 " @parentsection config
 " The values of the cache flags can be also used when configuring the
