@@ -21,6 +21,8 @@ endif
 " the needed arguments during the command run and add them as you insert them).
 " Once all the arguments are inserted, the comment will be added to the gitlab
 " MR.
+" This command will get the body of the comment from a new buffer (by
+" default). To read more about it, read @section(inserting-body).
 "
 " @usage [body]
 " Add a comment into a gitlab MR. In this form, the body of the comment will be
@@ -48,6 +50,8 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 " the needed arguments during the command run and add them as you insert them).
 " Once all the arguments are inserted, the new discussion thread will be added
 " to the gitlab MR.
+" This command will get the body of the comment from a new buffer (by
+" default). To read more about it, read @section(inserting-body).
 "
 " @usage [body]
 " Add a general discussion thread a gitlab MR. In this form, the body of the
@@ -77,6 +81,8 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 " the needed arguments during the command run and add them as you insert them).
 " Once all the arguments are inserted, the new discussion thread will be added
 " to the gitlab MR.
+" This command will get the body of the comment from a new buffer (by
+" default). To read more about it, read @section(inserting-body).
 "
 " @usage [body] [base_sha] [start_sha] [head_sha] [old_path] [new_path] [old_line] [new_line] [project_id] [merge_request_id]
 " Add a code discussion thread to gitlab. In this form, the discussion thread
