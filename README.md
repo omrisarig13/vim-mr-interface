@@ -279,7 +279,7 @@ released in versions later than the planned one (except for special cases).
 - [x] Release v0.1 ([#6][i6])
 
 ### Release v0.2
-- [ ] Change comments to use temporary buffers ([#7][i7])
+- [x] Change comments to use temporary buffers ([#7][i7])
 - [ ] Add option to create comment on current line ([#8][i8])
 - [ ] Add parameter calculation to the plugin ([#9][i9])
 - [ ] Release v0.2 ([#16][i16])
