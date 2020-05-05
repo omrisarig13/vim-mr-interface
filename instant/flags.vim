@@ -54,7 +54,21 @@ call s:plugin.Flag('gitlab_private_token', '')
 call s:plugin.Flag('automatically_insert_cache', v:true)
 
 ""
-" @section Cache Flags, cache_flags
+" Save whether the plugin should create a buffer whenever it needs to read the
+" body of a message from the user, or get the body in the regular method.
+"
+" For more information about reading the body from a buffer, read
+" @section(inserting-body).
+call s:plugin.Flag('read_body_from_buffer', v:true)
+
+""
+" The height of the scratch buffer that will be created when inserting the body.
+"
+" This is relevant only in case the value of @flag(read_body_from_buffer).
+call s:plugin.Flag('body_buffer_height', 5)
+
+""
+" @section Cache Flags, cache-flags
 " @parentsection config
 " The values of the cache flags can be also used when configuring the
 " plugin. However, you probably don't want that.
@@ -140,4 +154,39 @@ call s:plugin.Flag('automatically_insert_cache', v:true)
 "
 " In case you don't want to use the values as cache, you can just use them as
 " regular global values by setting them explicitly in your vimrc according to
-" the instructions from here: @section(cache_flags)
+" the instructions from here: @section(cache-flags)
+
+
+""
+" @section Inserting Body, inserting-body
+" @parentsection commands
+" By default, whenever running a command that needs to get the body of any
+" command sent to gitlab, the body of the command will be inserted from
+" a temporary buffer.
+"
+" This is done because a lot of the time, the body of the command will be long,
+" and might consist of several different sentences. Because the input consists
+" of several sentences, it can't be inserted using the |input()| method (which
+" get the input from the menu at the bottom of vim) because this command can not
+" get more than one line. Moreover, whenever typing a lot of information, it is
+" a lot easier to write it with full vim compatibility than to insert it as text
+" in the command window.
+"
+" When the command will run in vim, a new unnamed buffer will be open at the top
+" of the current tab. You should write the body of the comment into this
+" buffer. When the buffer will be closed, the body will be taken from it (it
+" does not matter if the buffer will be saved or not). After the buffer will be
+" closed, it will be completely wiped out of vim's memory (to not clutter the
+" memory with a lot of unused buffers).
+"
+" After running a command, but before filling the information inside the buffer,
+" you can do whatever you want with vim (it is completely okay to move around,
+" change windows, tabs, open or close any other files, copy information to and
+" from this buffer...). However, it will be impossible to run any other command
+" from this plugin until this buffer will be closed and the current command will
+" be completed. In case you want to cancel the current command, you can leave
+" the buffer empty, it will cancel the function.
+"
+" In case you don't want this functionality, and want to insert the body as all
+" the other variables (using the |input()| method), you can change the value of
+" @flag(read_body_from_buffer).

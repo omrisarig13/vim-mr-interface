@@ -5,8 +5,9 @@
 CONTENTS                                           *vim-mr-interface-contents*
   1. Introduction.....................................|vim-mr-interface-intro|
   2. Configuration...................................|vim-mr-interface-config|
-      1. Cache Flags............................|vim-mr-interface-cache_flags|
+      1. Cache Flags............................|vim-mr-interface-cache-flags|
   3. Commands......................................|vim-mr-interface-commands|
+      1. Inserting Body......................|vim-mr-interface-inserting-body|
   4. Cache............................................|vim-mr-interface-cache|
 
 ==============================================================================
@@ -51,12 +52,27 @@ Save whether the plugin should use the cache value instantly, or always ask
 the user to insert the needed values.
 Default: v:true `
 
+                                      *vim-mr-interface:read_body_from_buffer*
+Save whether the plugin should create a buffer whenever it needs to read the
+body of a message from the user, or get the body in the regular method.
+
+For more information about reading the body from a buffer, read
+|vim-mr-interface-inserting-body|.
+Default: v:true `
+
+                                         *vim-mr-interface:body_buffer_height*
+The height of the scratch buffer that will be created when inserting the body.
+
+This is relevant only in case the value of
+|vim-mr-interface:read_body_from_buffer|.
+Default: 5 `
+
                                            *vim-mr-interface:plugin[commands]*
 Configures whether plugin/commands.vim should be loaded.
 Default: 1 `
 
 ==============================================================================
-CACHE FLAGS                                     *vim-mr-interface-cache_flags*
+CACHE FLAGS                                     *vim-mr-interface-cache-flags*
 
 The values of the cache flags can be also used when configuring the plugin.
 However, you probably don't want that.
@@ -87,7 +103,9 @@ COMMANDS                                           *vim-mr-interface-commands*
   Add a comment into a gitlab MR. If run without arguments, this function
   works interactively (asks you for all the needed arguments during the
   command run and add them as you insert them). Once all the arguments are
-  inserted, the comment will be added to the gitlab MR.
+  inserted, the comment will be added to the gitlab MR. This command will get
+  the body of the comment from a new buffer (by default). To read more about
+  it, read |vim-mr-interface-inserting-body|.
 
 
 :MRInterfaceAddComment [body]
@@ -115,7 +133,8 @@ COMMANDS                                           *vim-mr-interface-commands*
   arguments, this function works interactively (asks you for all the needed
   arguments during the command run and add them as you insert them). Once all
   the arguments are inserted, the new discussion thread will be added to the
-  gitlab MR.
+  gitlab MR. This command will get the body of the comment from a new buffer
+  (by default). To read more about it, read |vim-mr-interface-inserting-body|.
 
 
 :MRInterfaceAddGeneralDiscussionThread [body]
@@ -145,7 +164,9 @@ COMMANDS                                           *vim-mr-interface-commands*
   run without arguments, this function works interactively (asks you for all
   the needed arguments during the command run and add them as you insert
   them). Once all the arguments are inserted, the new discussion thread will
-  be added to the gitlab MR.
+  be added to the gitlab MR. This command will get the body of the comment
+  from a new buffer (by default). To read more about it, read
+  |vim-mr-interface-inserting-body|.
 
 
 :MRInterfaceAddCodeDiscussionThread [body] [base_sha] [start_sha] [head_sha]
@@ -189,6 +210,40 @@ COMMANDS                                           *vim-mr-interface-commands*
 
   For more information about the cache mechanism, see
   |vim-mr-interface-cache|.
+
+==============================================================================
+INSERTING BODY                               *vim-mr-interface-inserting-body*
+
+By default, whenever running a command that needs to get the body of any
+command sent to gitlab, the body of the command will be inserted from a
+temporary buffer.
+
+This is done because a lot of the time, the body of the command will be long,
+and might consist of several different sentences. Because the input consists
+of several sentences, it can't be inserted using the |input()| method (which
+get the input from the menu at the bottom of vim) because this command can not
+get more than one line. Moreover, whenever typing a lot of information, it is
+a lot easier to write it with full vim compatibility than to insert it as text
+in the command window.
+
+When the command will run in vim, a new unnamed buffer will be open at the top
+of the current tab. You should write the body of the comment into this buffer.
+When the buffer will be closed, the body will be taken from it (it does not
+matter if the buffer will be saved or not). After the buffer will be closed,
+it will be completely wiped out of vim's memory (to not clutter the memory
+with a lot of unused buffers).
+
+After running a command, but before filling the information inside the buffer,
+you can do whatever you want with vim (it is completely okay to move around,
+change windows, tabs, open or close any other files, copy information to and
+from this buffer...). However, it will be impossible to run any other command
+from this plugin until this buffer will be closed and the current command will
+be completed. In case you want to cancel the current command, you can leave
+the buffer empty, it will cancel the function.
+
+In case you don't want this functionality, and want to insert the body as all
+the other variables (using the |input()| method), you can change the value of
+|vim-mr-interface:read_body_from_buffer|.
 
 ==============================================================================
 CACHE                                                 *vim-mr-interface-cache*
@@ -252,7 +307,7 @@ old values when they no longer makes sense.
 
 In case you don't want to use the values as cache, you can just use them as
 regular global values by setting them explicitly in your vimrc according to
-the instructions from here: |vim-mr-interface-cache_flags|
+the instructions from here: |vim-mr-interface-cache-flags|
 
 
 vim:tw=78:ts=8:ft=help:norl:
