@@ -987,6 +987,8 @@ endfunction
 "
 " The function can return one of the following values:
 "  "Passed" - when the command passed.
+"  "Bad Request" - The request that was sent was bad - it didn't contain the
+"                  needed information.
 "  "Unauthorized" - In case the user is not autorized to run the given command.
 "  "Not Found" - In case the requested page was not found.
 "  "Token Expired" - In case the token is expired.
@@ -998,6 +1000,8 @@ endfunction
 function! s:GetCommandOutputStatus(command_output)
     if stridx(a:command_output, '"message":"404') != -1
         return "Not Found"
+    elseif stridx(a:command_output, '"message":"400 (Bad request)') != -1
+        return "Bad Request"
     elseif stridx(a:command_output, '"message":"401 Unauthorized"') != -1
         return "Unauthorized"
     elseif stridx(a:command_output, '"error_description":"Token is expired.') != -1
