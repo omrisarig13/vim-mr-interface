@@ -119,7 +119,7 @@ command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDis
 " file is an old code (the comment will appear on the file before the change
 " that was done in this commit).
 " This command works for files that appear both in the old revision and in the
-" current revision (they weren't added, deleted or renamed during the code of
+" old revision (they weren't added, deleted or renamed during the code of
 " the merge request). It will work only for adding comments on code that
 " appeared in the old commit, but does not appear any more in the new commit (it
 " was changed or deleted).
@@ -137,6 +137,35 @@ command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDis
 " parameter as well.
 command -nargs=* MRInterfaceAddCodeDiscussionThreadOnOldCode call mr_interface#AddCodeDiscussionThreadOnOldCode(<f-args>)
 " MRInterfaceAddCodeDiscussionThreadOnOldCode }}}
+
+" MRInterfaceAddCodeDiscussionThreadOnNewCode {{{
+""
+" @usage
+" Add a new code discussion thread on new code.
+" This function will add get the comment from you (using temp buffer, read
+" @section(inserting-body) for more information), and then add a comment with
+" this information on the current line of code on the file, assuming that the
+" file is an new code (the comment will appear on the file after the change
+" that was done in this commit).
+" This command works for files that appear both in the new revision and in the
+" old revision (they weren't added, deleted or renamed during the code of
+" the merge request). It will work only for adding comments on code that
+" appeared in the new commit, but did not appear in the old commit (it was
+" changed or added).
+"
+" @usage [body]
+" Same as the previous command, but in this form it get the body of the new
+" discussion thread from the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id]
+" Same as the previous command, but in this form it gets all the arguments from
+" the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id] [gitlab_private_token]
+" The same as the command above, but this form gets the private token as
+" parameter as well.
+command -nargs=* MRInterfaceAddCodeDiscussionThreadOnNewCode call mr_interface#AddCodeDiscussionThreadOnNewCode(<f-args>)
+" MRInterfaceAddCodeDiscussionThreadOnNewCode }}}
 
 " MRInterfaceResetCache {{{
 ""

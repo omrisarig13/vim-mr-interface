@@ -620,7 +620,7 @@ function! s:AddCodeDiscussionThreadOnOldCode(
             \ head_sha,
             \ project_id,
             \ merge_request_id)
-    return s:AddCodeDiscussionThreadOnOLdCodeWithPrivateToken(
+    return s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken(
                 \ a:comment_body,
                 \ a:base_sha,
                 \ a:start_sha,
@@ -650,12 +650,12 @@ function! s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter(
 endfunction
 " s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter }}}
 
-" s:AddCodeDiscussionThreadOnOLdCodeWithPrivateToken {{{
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken {{{
 ""
 " Add a code discussion thread to a gitlab MR according to the current position
 " of the cursor on an old file.
 " Return whether the command that run has finished executing.
-function! s:AddCodeDiscussionThreadOnOLdCodeWithPrivateToken(
+function! s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken(
             \ comment_body,
             \ base_sha,
             \ start_sha,
@@ -678,7 +678,7 @@ function! s:AddCodeDiscussionThreadOnOLdCodeWithPrivateToken(
         \ a:project_id,
         \ a:merge_request_id)
 endfunction
-" s:AddCodeDiscussionThreadOnOLdCodeWithPrivateToken }}}
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken }}}
 
 " s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter {{{
 ""
@@ -718,6 +718,162 @@ endfunction
 " s:AddCodeDiscussionThreadOnOldCodeWithBody }}}
 
 " Old Code }}}
+
+" New Code {{{
+
+" s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter {{{
+""
+" A adapter function for s:InteractiveAddCodeDiscussionThreadOnNewCode that get
+" a list as argument and calls the original function.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter(
+            \ list_argument)
+    return s:InteractiveAddCodeDiscussionThreadOnNewCode()
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter }}}
+
+" s:InteractiveAddCodeDiscussionThreadOnNewCode {{{
+""
+" A function that will add a comment on new code, getting the arguments for the
+" comment interactively from the user.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnNewCode()
+    let l:current_position = s:GetCurrentCodePosition()
+
+    return s:InteractiveAddCodeDiscussionThreadWithPosition(
+        \ {'old_path': l:current_position['full_file_path'],
+        \  'new_path': l:current_position['full_file_path'],
+        \  'old_line': 'null',
+        \  'new_line': l:current_position['line_number']})
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnNewCode }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCodeDiscussionThreadOnNewCode that get the
+" arguments as a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter(list_arguments)
+    return s:AddCodeDiscussionThreadOnNewCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCode {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an new file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCode(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ project_id,
+            \ merge_request_id)
+    return s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken(
+                \ a:comment_body,
+                \ a:base_sha,
+                \ a:start_sha,
+                \ a:head_sha,
+                \ s:GetGitlabPrivateTokenFromGlobal(),
+                \ a:project_id,
+                \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnNewCode }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken that get the arguments as
+" a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter(
+            \ list_arguments)
+    return s:AddCodeDiscussionThreadOnNewCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5],
+                \ a:list_arguments[6])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an new file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    let l:current_position = s:GetCurrentCodePosition()
+
+    return s:AddCodeDiscussionThreadWithPrivateToken(
+        \ a:comment_body,
+        \ a:base_sha,
+        \ a:start_sha,
+        \ a:head_sha,
+        \ l:current_position['full_file_path'],
+        \ l:current_position['full_file_path'],
+        \ 'null',
+        \ l:current_position['line_number'],
+        \ a:gitlab_private_token,
+        \ a:project_id,
+        \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddCodeDiscussionThreadOnNewCodeWithBody that get
+" the argument as a list and passes it to the regular function.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter(
+            \ arguments_list)
+    return s:AddCodeDiscussionThreadOnNewCodeWithBody(a:arguments_list[0])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithBody {{{
+""
+" Add a new code discussion thread on the current position on the new code into
+" the gitlab MR.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithBody(discussion_thread_body)
+    call s:VerifyInCache([
+                \ 'base sha',
+                \ 'start sha',
+                \ 'head sha',
+                \ 'project id',
+                \ 'merge request id'])
+
+    return s:AddCodeDiscussionThreadOnNewCode(
+        \ a:discussion_thread_body,
+        \ s:cache['base sha'],
+        \ s:cache['start sha'],
+        \ s:cache['head sha'],
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithBody }}}
+
+" New Code }}}
 
 " General {{{
 
@@ -1547,6 +1703,38 @@ function! mr_interface#AddCodeDiscussionThreadOnOldCode(...)
     endif
 endfunction
 " mr_interface#AddCodeDiscussionThreadOnOldCode }}}
+
+" mr_interface#AddCodeDiscussionThreadOnNewCode {{{
+""
+" Add a code discussion thread to the gitlab MR.
+" This function can ran either with no arguments or with all the needed
+" arguments for adding a code discussion thread.
+" In case it is run without arguments, the user will be prompt to add the needed
+" arguments. In case it run with all the arguments, the discussion thread will
+" just be added to the MR. In case it was run with invalid number of arguments,
+" an error will be printed to the screen.
+function! mr_interface#AddCodeDiscussionThreadOnNewCode(...)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        let l:finished = s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+            \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
+            \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+            \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
+        if !l:finished
+            let l:should_finish_command = v:false
+        endif
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+endfunction
+" mr_interface#AddCodeDiscussionThreadOnNewCode }}}
 
 " mr_interface#ResetCache {{{
 ""
