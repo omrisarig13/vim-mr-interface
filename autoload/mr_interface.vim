@@ -582,7 +582,7 @@ endfunction
 " comment interactively from the user.
 " Return whether the command that run has finished executing.
 function! s:InteractiveAddCodeDiscussionThreadOnOldCode()
-    let l:current_position = s:GetCurrentCodePosition()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
 
     return s:InteractiveAddCodeDiscussionThreadWithPosition(
         \ {'old_path': l:current_position['full_file_path'],
@@ -663,7 +663,7 @@ function! s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken(
             \ gitlab_private_token,
             \ project_id,
             \ merge_request_id)
-    let l:current_position = s:GetCurrentCodePosition()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
 
     return s:AddCodeDiscussionThreadWithPrivateToken(
         \ a:comment_body,
@@ -738,7 +738,7 @@ endfunction
 " comment interactively from the user.
 " Return whether the command that run has finished executing.
 function! s:InteractiveAddCodeDiscussionThreadOnNewCode()
-    let l:current_position = s:GetCurrentCodePosition()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
 
     return s:InteractiveAddCodeDiscussionThreadWithPosition(
         \ {'old_path': l:current_position['full_file_path'],
@@ -819,7 +819,7 @@ function! s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken(
             \ gitlab_private_token,
             \ project_id,
             \ merge_request_id)
-    let l:current_position = s:GetCurrentCodePosition()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
 
     return s:AddCodeDiscussionThreadWithPrivateToken(
         \ a:comment_body,
@@ -1278,6 +1278,43 @@ endfunction
 " s:RunGitlabAction }}}
 
 " Gitlab Specific }}}
+
+" Git Specific {{{
+
+" s:GetCurrentCodePositionWithFugitive {{{
+""
+" Get the current position of the cursor.
+" In case the cursor is inside a file with fugitive-like file name, and the user
+" wanted to support fugitive, the position will be on the file as if it were the
+" regular file, not the fugitive one.
+" The function will return a dict that includes the full file path of the
+" current file, and the current line number in this path.
+function! s:GetCurrentCodePositionWithFugitive()
+    let l:position = s:GetCurrentCodePosition()
+
+    if s:plugin.Flag('support_fugitive_file_names')
+        let l:position['full_file_path'] =
+            \ s:GetFugitiveRealPath(l:position['full_file_path'])
+    endif
+
+    return l:position
+endfunction
+" s:GetCurrentCodePositionWithFugitive }}}
+
+" s:GetFugitiveRealPath {{{
+""
+" Get the real path of the file from the repository, in case it is opened as
+" a fugitive buffer
+function! s:GetFugitiveRealPath(fugitive_path)
+    return substitute(
+        \ a:fugitive_path,
+        \ 'fugitive.*git\/\/[0-9a-fA-F]\{40}\/',
+        \ '',
+        \ 'g')
+endfunction
+" s:GetFugitiveRealPath }}}
+
+" Git Specific }}}
 
 " Vimscript Utils {{{
 

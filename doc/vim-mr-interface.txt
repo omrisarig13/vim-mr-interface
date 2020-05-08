@@ -69,6 +69,16 @@ This is relevant only in case the value of
 |vim-mr-interface:read_body_from_buffer|.
 Default: 5 `
 
+                                *vim-mr-interface:support_fugitive_file_names*
+Whether to support fugitive file names.
+
+When editing the code using fugitive, with the command of Gdiffsplit (and
+Gsdiffsplit, Ghdiffsplit) the names of the old files are being changed. In
+case this flag will be true, whenever the plugin will get the file name, it
+will turn files from fugitive names into regular names, so they will be able
+to be added to the gitlab as comments.
+Default: v:true `
+
                                            *vim-mr-interface:plugin[commands]*
 Configures whether plugin/commands.vim should be loaded.
 Default: 1 `

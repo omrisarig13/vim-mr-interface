@@ -68,6 +68,17 @@ call s:plugin.Flag('read_body_from_buffer', v:true)
 call s:plugin.Flag('body_buffer_height', 5)
 
 ""
+" Whether to support fugitive file names.
+"
+" When editing the code using fugitive, with the command of Gdiffsplit (and
+" Gsdiffsplit, Ghdiffsplit) the names of the old files are being changed.
+" In case this flag will be true, whenever the plugin will get the file name, it
+" will turn files from fugitive names into regular names, so they will be able
+" to be added to the gitlab as comments.
+call s:plugin.Flag('support_fugitive_file_names', v:true)
+
+
+""
 " @section Cache Flags, cache-flags
 " @parentsection config
 " The values of the cache flags can be also used when configuring the
