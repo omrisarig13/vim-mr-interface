@@ -118,11 +118,10 @@ command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDis
 " this information on the current line of code on the file, assuming that the
 " file is an old code (the comment will appear on the file before the change
 " that was done in this commit).
-" This command works for files that appear both in the old revision and in the
-" old revision (they weren't added, deleted or renamed during the code of
-" the merge request). It will work only for adding comments on code that
-" appeared in the old commit, but does not appear any more in the new commit (it
-" was changed or deleted).
+" This command works for old code only. Old code can be code on file that was
+" deleted during this merge request, it can be code that was changed on existing
+" file during this merge request (when looking at the old file), and it can be
+" on code that was deleted in an existing file during this merge request.
 "
 " @usage [body]
 " Same as the previous command, but in this form it get the body of the new
@@ -147,11 +146,10 @@ command -nargs=* MRInterfaceAddCodeDiscussionThreadOnOldCode call mr_interface#A
 " this information on the current line of code on the file, assuming that the
 " file is an new code (the comment will appear on the file after the change
 " that was done in this commit).
-" This command works for files that appear both in the new revision and in the
-" old revision (they weren't added, deleted or renamed during the code of
-" the merge request). It will work only for adding comments on code that
-" appeared in the new commit, but did not appear in the old commit (it was
-" changed or added).
+" This command works for new code only. New code can be code on file that was
+" added during this merge request, it can be code that was changed on existing
+" file during this merge request, and it can be on code that was added in an
+" existing file during this merge request.
 "
 " @usage [body]
 " Same as the previous command, but in this form it get the body of the new
