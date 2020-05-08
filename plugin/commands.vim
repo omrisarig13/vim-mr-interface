@@ -1,5 +1,7 @@
 " This file includes all the different commands of the plugin.
 
+" File needed information {{{
+
 ""
 " @section Commands, commands
 
@@ -14,6 +16,11 @@ endif
 " so if there is any error with the command, it means that the user has already
 " defined such command.
 
+" File needed information }}}
+
+" Commands {{{
+
+" MRInterfaceAddComment {{{
 ""
 " @usage
 " Add a comment into a gitlab MR.
@@ -41,7 +48,9 @@ endif
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
+" MRInterfaceAddComment }}}
 
+" MRInterfaceAddGeneralDiscussionThread {{{
 ""
 " @usage
 " Add a general discussion thread into a gitlab MR.
@@ -71,7 +80,9 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGeneralDiscussionThread(<f-args>)
+" MRInterfaceAddGeneralDiscussionThread }}}
 
+" MRInterfaceAddCodeDiscussionThread {{{
 ""
 " @usage
 " Add a code discussion thread into a gitlab MR.
@@ -96,7 +107,9 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDiscussionThread(<f-args>)
+" MRInterfaceAddCodeDiscussionThread }}}
 
+" MRInterfaceAddCodeDiscussionThreadOnOldCode {{{
 ""
 " @usage
 " Add a new code discussion thread on old code.
@@ -123,14 +136,18 @@ command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDis
 " The same as the command above, but this form gets the private token as
 " parameter as well.
 command -nargs=* MRInterfaceAddCodeDiscussionThreadOnOldCode call mr_interface#AddCodeDiscussionThreadOnOldCode(<f-args>)
+" MRInterfaceAddCodeDiscussionThreadOnOldCode }}}
 
+" MRInterfaceResetCache {{{
 ""
 " @usage
 " Reset the cache of the plugin.
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
+" MRInterfaceResetCache }}}
 
+" MRInterfaceSetCache {{{
 ""
 " @usage
 " Set all the keys in the cache, interactively.
@@ -141,7 +158,9 @@ command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
+" MRInterfaceSetCache }}}
 
+" MRInterfaceUpdateValueInCache {{{
 ""
 " @usage [key] [value]
 " Add the given [value] into the cache as the value for [key].
@@ -153,3 +172,6 @@ command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCache(<f-args>)
+" MRInterfaceUpdateValueInCache }}}
+
+" Commands }}}
