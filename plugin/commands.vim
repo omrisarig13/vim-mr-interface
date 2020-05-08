@@ -1,5 +1,7 @@
 " This file includes all the different commands of the plugin.
 
+" File needed information {{{
+
 ""
 " @section Commands, commands
 
@@ -14,6 +16,11 @@ endif
 " so if there is any error with the command, it means that the user has already
 " defined such command.
 
+" File needed information }}}
+
+" Commands {{{
+
+" MRInterfaceAddComment {{{
 ""
 " @usage
 " Add a comment into a gitlab MR.
@@ -41,7 +48,9 @@ endif
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
+" MRInterfaceAddComment }}}
 
+" MRInterfaceAddGeneralDiscussionThread {{{
 ""
 " @usage
 " Add a general discussion thread into a gitlab MR.
@@ -71,7 +80,9 @@ command -nargs=* MRInterfaceAddComment call mr_interface#AddComment(<f-args>)
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGeneralDiscussionThread(<f-args>)
+" MRInterfaceAddGeneralDiscussionThread }}}
 
+" MRInterfaceAddCodeDiscussionThread {{{
 ""
 " @usage
 " Add a code discussion thread into a gitlab MR.
@@ -96,14 +107,74 @@ command -nargs=* MRInterfaceAddGeneralDiscussionThread call mr_interface#AddGene
 " [private_token] is inserted as well. When run with this form, the private
 " token that will be inserted will be used, ignoring the global private token.
 command -nargs=* MRInterfaceAddCodeDiscussionThread call mr_interface#AddCodeDiscussionThread(<f-args>)
+" MRInterfaceAddCodeDiscussionThread }}}
 
+" MRInterfaceAddCodeDiscussionThreadOnOldCode {{{
+""
+" @usage
+" Add a new code discussion thread on old code.
+" This function will add get the comment from you (using temp buffer, read
+" @section(inserting-body) for more information), and then add a comment with
+" this information on the current line of code on the file, assuming that the
+" file is an old code (the comment will appear on the file before the change
+" that was done in this commit).
+" This command works for old code only. Old code can be code on file that was
+" deleted during this merge request, it can be code that was changed on existing
+" file during this merge request (when looking at the old file), and it can be
+" on code that was deleted in an existing file during this merge request.
+"
+" @usage [body]
+" Same as the previous command, but in this form it get the body of the new
+" discussion thread from the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id]
+" Same as the previous command, but in this form it gets all the arguments from
+" the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id] [gitlab_private_token]
+" The same as the command above, but this form gets the private token as
+" parameter as well.
+command -nargs=* MRInterfaceAddCodeDiscussionThreadOnOldCode call mr_interface#AddCodeDiscussionThreadOnOldCode(<f-args>)
+" MRInterfaceAddCodeDiscussionThreadOnOldCode }}}
+
+" MRInterfaceAddCodeDiscussionThreadOnNewCode {{{
+""
+" @usage
+" Add a new code discussion thread on new code.
+" This function will add get the comment from you (using temp buffer, read
+" @section(inserting-body) for more information), and then add a comment with
+" this information on the current line of code on the file, assuming that the
+" file is an new code (the comment will appear on the file after the change
+" that was done in this commit).
+" This command works for new code only. New code can be code on file that was
+" added during this merge request, it can be code that was changed on existing
+" file during this merge request, and it can be on code that was added in an
+" existing file during this merge request.
+"
+" @usage [body]
+" Same as the previous command, but in this form it get the body of the new
+" discussion thread from the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id]
+" Same as the previous command, but in this form it gets all the arguments from
+" the command, not interactively from the user.
+"
+" @usage [body] [base_sha] [start_sha] [head_sha] [project_id] [merge_request_id] [gitlab_private_token]
+" The same as the command above, but this form gets the private token as
+" parameter as well.
+command -nargs=* MRInterfaceAddCodeDiscussionThreadOnNewCode call mr_interface#AddCodeDiscussionThreadOnNewCode(<f-args>)
+" MRInterfaceAddCodeDiscussionThreadOnNewCode }}}
+
+" MRInterfaceResetCache {{{
 ""
 " @usage
 " Reset the cache of the plugin.
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
+" MRInterfaceResetCache }}}
 
+" MRInterfaceSetCache {{{
 ""
 " @usage
 " Set all the keys in the cache, interactively.
@@ -114,7 +185,9 @@ command -nargs=0 MRInterfaceResetCache call mr_interface#ResetCache()
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
+" MRInterfaceSetCache }}}
 
+" MRInterfaceUpdateValueInCache {{{
 ""
 " @usage [key] [value]
 " Add the given [value] into the cache as the value for [key].
@@ -126,3 +199,6 @@ command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
 "
 " For more information about the cache mechanism, see @section(cache).
 command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCache(<f-args>)
+" MRInterfaceUpdateValueInCache }}}
+
+" Commands }}}

@@ -281,7 +281,7 @@ released in versions later than the planned one (except for special cases).
 ### Release v0.2
 - [x] Change comments to use temporary buffers ([#7][i7])
 - [x] Print errors for bad requests ([#29][i29])
-- [ ] Add option to create comment on current line ([#8][i8])
+- [x] Add option to create comment on current line ([#8][i8])
 - [ ] Add parameter calculation to the plugin ([#9][i9])
 - [ ] Release v0.2 ([#16][i16])
 

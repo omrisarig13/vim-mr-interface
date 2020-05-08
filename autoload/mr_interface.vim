@@ -84,38 +84,291 @@ endif
 
 " Internal Functions {{{
 
-" s:GetArgumentsFromCommandLine {{{
+" Add Comment {{{
+
+" s:InteractiveAddCommentListArgumentAdapter {{{
 ""
-" Turn a list of arguments from the ex-command into a real list of arguments.
-"
-" The original list of arguments is separated by spaces, but some of the words
-" there are part of the same argument (according to quotes). This list turn
-" a list separated by words to be separated by quotes.
-"
-" The function gets the list of arguments (according to vim's <f-args>) and
-" return a new list that was created according to the quotes and not spaces.
-function! s:GetArgumentsFromCommandLine(arguments)
-    let l:mutable_arguments = copy(a:arguments)
-    let l:result = []
-
-    " Move over the list, concatenating all the variables from the quotes
-    " together.
-    while len(l:mutable_arguments) != 0
-        let l:current_item = lh#command#Fargs2String(l:mutable_arguments)
-        call add(l:result, s:RemoveStringQuotes(l:current_item))
-    endwhile
-
-    return l:result
+" An adapter to the function of s:InteractiveAddComment that gets an argument of
+" list and discards it.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCommentListArgumentAdapter(arguments_list)
+    return s:InteractiveAddComment()
 endfunction
-" s:GetArgumentsFromCommandLine }}}
+" s:InteractiveAddCommentListArgumentAdapter }}}
 
-" s:RemoveStringQuotes {{{
+" s:InteractiveAddComment {{{
 ""
-" Remove all the quotes from the string.
-function! s:RemoveStringQuotes(string)
-    return substitute(a:string, "[\"']", '', 'g')
+" Add a comment to a gitlab MR interactively.
+"
+" This functions asks the user to insert all the needed information in order to
+" add a comment, and then adds this comment to the gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddComment()
+    return s:RunFunctionWithInteractiveBody(function('s:InteractiveAddCommentWithBody'))
 endfunction
-" s:RemoveStringQuotes }}}
+" s:InteractiveAddComment }}}
+
+" s:InteractiveAddCommentWithBody {{{
+""
+" Add the comment interactively when the only value present is the body.
+" This function was created to support multiple ways to get the body from the
+" user.
+" In case the body is empty, no command will run.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCommentWithBody(body)
+    if empty(a:body)
+        return v:true
+    endif
+
+    let l:content = s:TurnBodyToContent(a:body)
+    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
+    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
+
+    " Add the comment.
+    return s:RunGitlabAction(
+        \ l:content,
+        \ l:gitlab_authentication,
+        \ l:merge_request_information,
+        \ s:gitlab_actions.ADD_COMMENT)
+endfunction
+" s:InteractiveAddCommentWithBody }}}
+
+" s:AddCommentListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddComment that gets the arguments as a list
+" instead of as separated arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCommentListArgumentAdapter(arguments_list)
+    return s:AddComment(
+        \ a:arguments_list[0],
+        \ a:arguments_list[1],
+        \ a:arguments_list[2])
+endfunction
+" s:AddCommentListArgumentAdapter }}}
+
+" s:AddCommentWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddCommentWithBody that get the argument as
+" a list and passes it to the regular function.
+" Return whether the command that run has finished executing.
+function! s:AddCommentWithBodyListArgumentAdapter(arguments_list)
+    return s:AddCommentWithBody(a:arguments_list[0])
+endfunction
+" s:AddCommentWithBodyListArgumentAdapter }}}
+
+" s:AddCommentWithBody {{{
+""
+" Add a new comment with the given body.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+" Return whether the command that run has finished executing.
+function! s:AddCommentWithBody(comment_body)
+    call s:VerifyInCache(['project id', 'merge request id'])
+
+    return s:AddComment(
+        \ a:comment_body,
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddCommentWithBody }}}
+
+" s:AddComment {{{
+""
+" Add the given comment into the given gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:AddComment(
+            \ comment_body,
+            \ project_id,
+            \ merge_request_id)
+    return s:AddCommentWithPrivateToken(
+                \ a:comment_body,
+                \ s:GetGitlabPrivateTokenFromGlobal(),
+                \ a:project_id,
+                \ a:merge_request_id)
+endfunction
+" s:AddComment }}}
+
+" s:AddCommentWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCommentWithPrivateToken that gets the
+" arguments as a list instead of as separated arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCommentWithPrivateTokenListArgumentAdapter(arguments_list)
+    return s:AddCommentWithPrivateToken(
+        \ a:arguments_list[0],
+        \ a:arguments_list[1],
+        \ a:arguments_list[2],
+        \ a:arguments_list[3])
+endfunction
+" s:AddCommentWithPrivateTokenListArgumentAdapter }}}
+
+" s:AddCommentWithPrivateToken {{{
+""
+" Add the given comment into the given gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:AddCommentWithPrivateToken(
+            \ comment_body,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    return s:RunGitlabAction(
+        \ {'body': a:comment_body},
+        \ {'private_token':a:gitlab_private_token},
+        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
+        \ s:gitlab_actions.ADD_COMMENT)
+endfunction
+" s:AddCommentWithPrivateToken }}}
+
+" Add Comment }}}
+
+" Add General Discussion Thread {{{
+
+" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter {{{
+""
+" An adapter to the function of s:InteractiveAddGeneralDiscussionThread that get
+" an argument of list and discards it.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter(
+            \ list_alguments)
+    return s:InteractiveAddGeneralDiscussionThread()
+endfunction
+" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter }}}
+
+" s:InteractiveAddGeneralDiscussionThread {{{
+""
+" Add a general discussion thread to a gitlab MR interactively.
+"
+" This functions asks the user to insert all the needed information in order to
+" add a comment, and then adds this comment to the gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddGeneralDiscussionThread()
+    return s:RunFunctionWithInteractiveBody(
+        \ function('s:InteractiveAddGeneralDiscussionThreadWithBody'))
+endfunction
+" s:InteractiveAddGeneralDiscussionThread }}}
+
+" s:InteractiveAddGeneralDiscussionThreadWithBody {{{
+""
+" Add a general discussion thread to a gitlab MR interactively with the body
+" given to it.
+"
+" This functions asks the user to insert all the needed information (except the
+" body)in order to add a comment, and then adds this comment to the gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddGeneralDiscussionThreadWithBody(body)
+    if empty(a:body)
+        return v:true
+    endif
+
+    " Get all the comments arguments.
+    let l:content = s:TurnBodyToContent(a:body)
+    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
+    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
+
+    " Add the comment.
+    return s:RunGitlabAction(
+        \ l:content,
+        \ l:gitlab_authentication,
+        \ l:merge_request_information,
+        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
+endfunction
+" s:InteractiveAddGeneralDiscussionThreadWithBody }}}
+
+" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddGeneralDiscussionThreadWithBody that get the
+" argument as a list and passes it to the regular function.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter(
+            \ arguments_list)
+    return s:AddGeneralDiscussionThreadWithBody(a:arguments_list[0])
+endfunction
+" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter }}}
+
+" s:AddGeneralDiscussionThreadWithBody {{{
+""
+" Add the given comment into the given gitlab's MR.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThreadWithBody(discussion_thread_body)
+    call s:VerifyInCache(['project id', 'merge request id'])
+
+    return s:AddGeneralDiscussionThread(
+        \ a:discussion_thread_body,
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddGeneralDiscussionThreadWithBody }}}
+
+" s:AddGeneralDiscussionThreadListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddGeneralDiscussionThread that gets
+" the arguments as a list.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThreadListArgumentAdapter(arguments_list)
+    return s:AddGeneralDiscussionThread(
+                \ a:arguments_list[0],
+                \ a:arguments_list[1],
+                \ a:arguments_list[2])
+endfunction
+" s:AddGeneralDiscussionThreadListArgumentAdapter }}}
+
+" s:AddGeneralDiscussionThread {{{
+""
+" Add the given comment into the given gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThread(
+            \ discussion_thread_body,
+            \ project_id,
+            \ merge_request_id)
+    return s:AddGeneralDiscussionThreadWithPrivateToken(
+                \ a:discussion_thread_body,
+                \ s:GetGitlabPrivateTokenFromGlobal(),
+                \ a:project_id,
+                \ a:merge_request_id)
+endfunction
+" s:AddGeneralDiscussionThread }}}
+
+" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddGeneralDiscussionThreadWithPrivateToken
+" that gets the arguments as a list.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter(
+            \ arguments_list)
+    return s:AddGeneralDiscussionThreadWithPrivateToken(
+                \ a:arguments_list[0],
+                \ a:arguments_list[1],
+                \ a:arguments_list[2],
+                \ a:arguments_list[3])
+endfunction
+" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter }}}
+
+" s:AddGeneralDiscussionThreadWithPrivateToken {{{
+""
+" Add the given comment into the given gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:AddGeneralDiscussionThreadWithPrivateToken(
+            \ discussion_thread_body,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    return s:RunGitlabAction(
+        \ {'body': a:discussion_thread_body},
+        \ {'private_token': a:gitlab_private_token},
+        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
+        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
+endfunction
+" s:AddGeneralDiscussionThreadWithPrivateToken }}}
+
+" Add General Discussion Thread }}}
+
+" Add Code Discussion Thread {{{
+
+" Not Connected To Code {{{
 
 " s:InteractiveAddCodeDiscussionThreadListArgumentAdapter {{{
 ""
@@ -151,13 +404,38 @@ endfunction
 " discussion thread to the gitlab's MR.
 " Return whether the command that run has finished executing.
 function! s:InteractiveAddCodeDiscussionThreadWithBody(body)
+    " Don't run commands with empty body. This is code duplication with the
+    " check in InteractiveAddCodeDiscussionThreadWithBodyAndPosition, but it
+    " should be here as well in order to let the user finish the command earlier
+    " (since he needs to insert parameters in case it won't finish now).
+    if empty(a:body)
+        return v:true
+    endif
+
+    let l:code_position = s:InteractiveGetCodePosition()
+
+    return s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition(
+        \ a:body,
+        \ l:code_position)
+endfunction
+" s:InteractiveAddCodeDiscussionThreadWithBody }}}
+
+" s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition {{{
+""
+" Interactively add the code discussion thread according to the body of the
+" comment and the position of the comment.
+function! s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition(
+            \ body,
+            \ code_position)
     " Don't run commands with empty body
     if empty(a:body)
         return v:true
     endif
 
     " Get all the comments arguments.
-    let l:content = s:InteractiveGetCodeDiscussionThreadContet(a:body)
+    let l:content = s:InteractiveGetCodeDiscussionThreadContet(
+        \ a:body,
+        \ a:code_position)
     let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
     let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
 
@@ -168,7 +446,7 @@ function! s:InteractiveAddCodeDiscussionThreadWithBody(body)
         \ l:merge_request_information,
         \ s:gitlab_actions.ADD_CODE_DISCUSSION_THREAD)
 endfunction
-" s:InteractiveAddCodeDiscussionThreadWithBody }}}
+" s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition }}}
 
 " s:AddCodeDiscussionThreadListArgumentAdapter {{{
 ""
@@ -281,122 +559,401 @@ endfunction
 ""
 " Get all the needed information for the content of a discussion thread on the
 " code.
-function! s:InteractiveGetCodeDiscussionThreadContet(body)
+function! s:InteractiveGetCodeDiscussionThreadContet(body, code_position)
     let l:all_variables = {}
     call extend(l:all_variables, s:TurnBodyToContent(a:body))
-    call extend(l:all_variables, s:InteractiveGetPosition())
+    call extend(
+        \ l:all_variables,
+        \ s:InteractiveGetPositionWithCodeParameter(a:code_position))
     return l:all_variables
 endfunction
 " s:InteractiveGetCodeDiscussionThreadContet }}}
 
-" s:InteractiveGetPosition {{{
+" Not Connected To Code }}}
+
+" Old Code {{{
+
+" s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter {{{
 ""
-" Get all the needed information for a position on the code for the MR.
-function! s:InteractiveGetPosition()
-    " The arguments of the sha probably won't change, use them from the cache.
-    let l:base_sha = s:GetWithCache('base sha')
-    let l:start_sha = s:GetWithCache('start sha')
-    let l:head_sha = s:GetWithCache('head sha')
+" A adapter function for s:InteractiveAddCodeDiscussionThreadOnOldCode that get
+" a list as argument and calls the original function.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter(
+            \ list_argument)
+    return s:InteractiveAddCodeDiscussionThreadOnOldCode()
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter }}}
+
+" s:InteractiveAddCodeDiscussionThreadOnOldCode {{{
+""
+" A function that will add a comment on old code, getting the arguments for the
+" comment interactively from the user.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnOldCode()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
+
+    return s:InteractiveAddCodeDiscussionThreadWithPosition(
+        \ {'old_path': l:current_position['full_file_path'],
+        \  'new_path': l:current_position['full_file_path'],
+        \  'old_line': l:current_position['line_number'],
+        \  'new_line': 'null'})
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnOldCode }}}
+
+" s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCodeDiscussionThreadOnOldCode that get the
+" arguments as a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter(list_arguments)
+    return s:AddCodeDiscussionThreadOnOldCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5])
+endfunction
+" s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnOldCode {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an old file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCode(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ project_id,
+            \ merge_request_id)
+    return s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken(
+                \ a:comment_body,
+                \ a:base_sha,
+                \ a:start_sha,
+                \ a:head_sha,
+                \ s:GetGitlabPrivateTokenFromGlobal(),
+                \ a:project_id,
+                \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnOldCode }}}
+
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken that get the arguments as
+" a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter(
+            \ list_arguments)
+    return s:AddCodeDiscussionThreadOnOldCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5],
+                \ a:list_arguments[6])
+endfunction
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an old file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
+
+    return s:AddCodeDiscussionThreadWithPrivateToken(
+        \ a:comment_body,
+        \ a:base_sha,
+        \ a:start_sha,
+        \ a:head_sha,
+        \ l:current_position['full_file_path'],
+        \ l:current_position['full_file_path'],
+        \ l:current_position['line_number'],
+        \ 'null',
+        \ a:gitlab_private_token,
+        \ a:project_id,
+        \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnOldCodeWithPrivateToken }}}
+
+" s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddCodeDiscussionThreadOnOldCodeWithBody that get
+" the argument as a list and passes it to the regular function.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter(
+            \ arguments_list)
+    return s:AddCodeDiscussionThreadOnOldCodeWithBody(a:arguments_list[0])
+endfunction
+" s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnOldCodeWithBody {{{
+""
+" Add a new code discussion thread on the current position on the old code into
+" the gitlab MR.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnOldCodeWithBody(discussion_thread_body)
+    call s:VerifyInCache([
+                \ 'base sha',
+                \ 'start sha',
+                \ 'head sha',
+                \ 'project id',
+                \ 'merge request id'])
+
+    return s:AddCodeDiscussionThreadOnOldCode(
+        \ a:discussion_thread_body,
+        \ s:cache['base sha'],
+        \ s:cache['start sha'],
+        \ s:cache['head sha'],
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddCodeDiscussionThreadOnOldCodeWithBody }}}
+
+" Old Code }}}
+
+" New Code {{{
+
+" s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter {{{
+""
+" A adapter function for s:InteractiveAddCodeDiscussionThreadOnNewCode that get
+" a list as argument and calls the original function.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter(
+            \ list_argument)
+    return s:InteractiveAddCodeDiscussionThreadOnNewCode()
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter }}}
+
+" s:InteractiveAddCodeDiscussionThreadOnNewCode {{{
+""
+" A function that will add a comment on new code, getting the arguments for the
+" comment interactively from the user.
+" Return whether the command that run has finished executing.
+function! s:InteractiveAddCodeDiscussionThreadOnNewCode()
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
+
+    return s:InteractiveAddCodeDiscussionThreadWithPosition(
+        \ {'old_path': l:current_position['full_file_path'],
+        \  'new_path': l:current_position['full_file_path'],
+        \  'old_line': 'null',
+        \  'new_line': l:current_position['line_number']})
+endfunction
+" s:InteractiveAddCodeDiscussionThreadOnNewCode }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter {{{
+""
+" An adapter to the function of s:AddCodeDiscussionThreadOnNewCode that get the
+" arguments as a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter(list_arguments)
+    return s:AddCodeDiscussionThreadOnNewCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCode {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an new file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCode(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ project_id,
+            \ merge_request_id)
+    return s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken(
+                \ a:comment_body,
+                \ a:base_sha,
+                \ a:start_sha,
+                \ a:head_sha,
+                \ s:GetGitlabPrivateTokenFromGlobal(),
+                \ a:project_id,
+                \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnNewCode }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter {{{
+""
+" An adapter to the function of
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken that get the arguments as
+" a list and calls the original function with the right arguments.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter(
+            \ list_arguments)
+    return s:AddCodeDiscussionThreadOnNewCode(
+                \ a:list_arguments[0],
+                \ a:list_arguments[1],
+                \ a:list_arguments[2],
+                \ a:list_arguments[3],
+                \ a:list_arguments[4],
+                \ a:list_arguments[5],
+                \ a:list_arguments[6])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken {{{
+""
+" Add a code discussion thread to a gitlab MR according to the current position
+" of the cursor on an new file.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken(
+            \ comment_body,
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ gitlab_private_token,
+            \ project_id,
+            \ merge_request_id)
+    let l:current_position = s:GetCurrentCodePositionWithFugitive()
+
+    return s:AddCodeDiscussionThreadWithPrivateToken(
+        \ a:comment_body,
+        \ a:base_sha,
+        \ a:start_sha,
+        \ a:head_sha,
+        \ l:current_position['full_file_path'],
+        \ l:current_position['full_file_path'],
+        \ 'null',
+        \ l:current_position['line_number'],
+        \ a:gitlab_private_token,
+        \ a:project_id,
+        \ a:merge_request_id)
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithPrivateToken }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter {{{
+""
+" An adepter to the function s:AddCodeDiscussionThreadOnNewCodeWithBody that get
+" the argument as a list and passes it to the regular function.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter(
+            \ arguments_list)
+    return s:AddCodeDiscussionThreadOnNewCodeWithBody(a:arguments_list[0])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter }}}
+
+" s:AddCodeDiscussionThreadOnNewCodeWithBody {{{
+""
+" Add a new code discussion thread on the current position on the new code into
+" the gitlab MR.
+" This function get all the other arguments from the cache.
+" @throws String Error in case one (or more) of the arguments are not in the
+"         cache.
+" Return whether the command that run has finished executing.
+function! s:AddCodeDiscussionThreadOnNewCodeWithBody(discussion_thread_body)
+    call s:VerifyInCache([
+                \ 'base sha',
+                \ 'start sha',
+                \ 'head sha',
+                \ 'project id',
+                \ 'merge request id'])
+
+    return s:AddCodeDiscussionThreadOnNewCode(
+        \ a:discussion_thread_body,
+        \ s:cache['base sha'],
+        \ s:cache['start sha'],
+        \ s:cache['head sha'],
+        \ s:cache['project id'],
+        \ s:cache['merge request id'])
+endfunction
+" s:AddCodeDiscussionThreadOnNewCodeWithBody }}}
+
+" New Code }}}
+
+" General {{{
+
+" s:InteractiveAddCodeDiscussionThreadWithPosition {{{
+""
+" Interactively add a code discussion thread on the given line.
+" Return whether the command that run has finished executing.
+" The position should be a dictionary with the values for 'old_path',
+" 'new_path', 'old_line', 'new_line'.
+function! s:InteractiveAddCodeDiscussionThreadWithPosition(position)
+    return s:RunFunctionWithInteractiveBodyAndParameter(
+        \ function('s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition'),
+        \ a:position,
+        \ v:true)
+endfunction
+" s:InteractiveAddCodeDiscussionThreadWithPosition }}}
+
+" General }}}
+
+" Add Code Discussion Thread }}}
+
+" Gitlab Specific {{{
+
+" Get Data Interactively {{{
+
+" s:InteractiveGetPositionWithCodeParameter {{{
+""
+" Get the full position (git and code positions) for a code discussion comment.
+function! s:InteractiveGetPositionWithCodeParameter(code_position)
+    let l:git_position = s:InteractiveGetGitPosition()
+
+    return s:CreatePositionDict(
+        \ l:git_position['base_sha'],
+        \ l:git_position['start_sha'],
+        \ l:git_position['head_sha'],
+        \ a:code_position['old_path'],
+        \ a:code_position['new_path'],
+        \ a:code_position['old_line'],
+        \ a:code_position['new_line'])
+endfunction
+" s:InteractiveGetPositionWithCodeParameter }}}
+
+" s:InteractiveGetCodePosition {{{
+""
+" Get the position on the code interactively.
+function! s:InteractiveGetCodePosition()
     let l:old_path = input(printf(s:insert_string_without_default, 'old path'))
     let l:new_path = s:InputWithDefault('new path', l:old_path)
     let l:old_line = input(printf(s:insert_string_without_default, 'old line'))
     let l:new_line = input(printf(s:insert_string_without_default, 'new line'))
-    return s:CreatePositionDict(
-        \ l:base_sha,
-        \ l:start_sha,
-        \ l:head_sha,
-        \ l:old_path,
-        \ l:new_path,
-        \ l:old_line,
-        \ l:new_line)
+    return {
+        \ 'old_path':l:old_path,
+        \ 'new_path':l:new_path,
+        \ 'old_line':l:old_line,
+        \ 'new_line':l:new_line}
 endfunction
-" s:InteractiveGetPosition }}}
+" s:InteractiveGetCodePosition }}}
 
-" s:CreatePositionDict {{{
+" s:InteractiveGetGitPosition {{{
 ""
-" Create the position dictionary from all its raw arguments.
-function! s:CreatePositionDict(
-            \ base_sha,
-            \ start_sha,
-            \ head_sha,
-            \ old_path,
-            \ new_path,
-            \ old_line,
-            \ new_line)
-    let l:position_dict = {}
-    let position_dict['base_sha'] = a:base_sha
-    let position_dict['start_sha'] = a:start_sha
-    let position_dict['head_sha'] = a:head_sha
-    let position_dict['position_type'] = 'text'
-    call s:AddIfNotEmpty(l:position_dict, 'old_path', a:old_path)
-    call s:AddIfNotEmpty(l:position_dict, 'new_path', a:new_path)
-    call s:AddIfNotEmpty(l:position_dict, 'old_line', a:old_line)
-    call s:AddIfNotEmpty(l:position_dict, 'new_line', a:new_line)
-    return {"position": l:position_dict}
+" Get all the needed information for a position on the code for the MR.
+function! s:InteractiveGetGitPosition()
+    " The arguments of the sha probably won't change, use them from the cache.
+    let l:base_sha = s:GetWithCache('base sha')
+    let l:start_sha = s:GetWithCache('start sha')
+    let l:head_sha = s:GetWithCache('head sha')
+    return {
+        \ 'base_sha': l:base_sha,
+        \ 'start_sha':l:start_sha,
+        \ 'head_sha':l:head_sha}
 endfunction
-" s:CreatePositionDict }}}
-
-" s:AddIfNotEmpty {{{
-""
-" Add the current entry to the dictionary in case the value is not empty.
-" This functions assume that a string of `null` is an empty string.
-function! s:AddIfNotEmpty(dictionary_to_add, new_key, new_value)
-    if !empty(a:new_value) && (a:new_value != 'null')
-        let a:dictionary_to_add[a:new_key] = a:new_value
-    endif
-endfunction
-" s:AddIfNotEmpty }}}
-
-" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter {{{
-""
-" An adapter to the function of s:InteractiveAddGeneralDiscussionThread that get
-" an argument of list and discards it.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter(
-            \ list_alguments)
-    return s:InteractiveAddGeneralDiscussionThread()
-endfunction
-" s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter }}}
-
-" s:InteractiveAddGeneralDiscussionThread {{{
-""
-" Add a general discussion thread to a gitlab MR interactively.
-"
-" This functions asks the user to insert all the needed information in order to
-" add a comment, and then adds this comment to the gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddGeneralDiscussionThread()
-    return s:RunFunctionWithInteractiveBody(
-        \ function('s:InteractiveAddGeneralDiscussionThreadWithBody'))
-endfunction
-" s:InteractiveAddGeneralDiscussionThread }}}
-
-" s:InteractiveAddGeneralDiscussionThreadWithBody {{{
-""
-" Add a general discussion thread to a gitlab MR interactively with the body
-" given to it.
-"
-" This functions asks the user to insert all the needed information (except the
-" body)in order to add a comment, and then adds this comment to the gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddGeneralDiscussionThreadWithBody(body)
-    if empty(a:body)
-        return v:true
-    endif
-
-    " Get all the comments arguments.
-    let l:content = s:TurnBodyToContent(a:body)
-    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
-    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
-
-    " Add the comment.
-    return s:RunGitlabAction(
-        \ l:content,
-        \ l:gitlab_authentication,
-        \ l:merge_request_information,
-        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
-endfunction
-" s:InteractiveAddGeneralDiscussionThreadWithBody }}}
+" s:InteractiveGetGitPosition }}}
 
 " s:InteractiveGetBodyAsContent {{{
 ""
@@ -420,14 +977,6 @@ function! s:InteractiveGetBody()
     return input(printf(s:insert_string_without_default, 'body'))
 endfunction
 " s:InteractiveGetBody }}}
-
-" s:TurnBodyToContent {{{
-""
-" Turn the string value inserted to the function to the needed value as content.
-function! s:TurnBodyToContent(body)
-    return {'body' : a:body}
-endfunction
-" s:TurnBodyToContent }}}
 
 " s:InteractiveGetMergeRequestInformation {{{
 ""
@@ -453,63 +1002,6 @@ function! s:InteractiveGetGitlabAutentication()
 endfunction
 " s:InteractiveGetGitlabAutentication }}}h
 
-" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter {{{
-""
-" An adepter to the function s:AddGeneralDiscussionThreadWithBody that get the
-" argument as a list and passes it to the regular function.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter(
-            \ arguments_list)
-    return s:AddGeneralDiscussionThreadWithBody(a:arguments_list[0])
-endfunction
-" s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter }}}
-
-" s:AddGeneralDiscussionThreadWithBody {{{
-""
-" Add the given comment into the given gitlab's MR.
-" This function get all the other arguments from the cache.
-" @throws String Error in case one (or more) of the arguments are not in the
-"         cache.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThreadWithBody(discussion_thread_body)
-    call s:VerifyInCache(['project id', 'merge request id'])
-
-    return s:AddGeneralDiscussionThread(
-        \ a:discussion_thread_body,
-        \ s:cache['project id'],
-        \ s:cache['merge request id'])
-endfunction
-" s:AddGeneralDiscussionThreadWithBody }}}
-
-" s:AddGeneralDiscussionThreadListArgumentAdapter {{{
-""
-" An adapter to the function of s:AddGeneralDiscussionThread that gets
-" the arguments as a list.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThreadListArgumentAdapter(arguments_list)
-    return s:AddGeneralDiscussionThread(
-                \ a:arguments_list[0],
-                \ a:arguments_list[1],
-                \ a:arguments_list[2])
-endfunction
-" s:AddGeneralDiscussionThreadListArgumentAdapter }}}
-
-" s:AddGeneralDiscussionThread {{{
-""
-" Add the given comment into the given gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThread(
-            \ discussion_thread_body,
-            \ project_id,
-            \ merge_request_id)
-    return s:AddGeneralDiscussionThreadWithPrivateToken(
-                \ a:discussion_thread_body,
-                \ s:GetGitlabPrivateTokenFromGlobal(),
-                \ a:project_id,
-                \ a:merge_request_id)
-endfunction
-" s:AddGeneralDiscussionThread }}}
-
 " s:GetGitlabPrivateTokenFromGlobalOrInteractive {{{
 ""
 " Get the global private token of 'gitlab_private_token'.
@@ -523,48 +1015,42 @@ function! s:GetGitlabPrivateTokenFromGlobalOrInteractive()
     return l:gitlab_private_token
 endfunction
 " s:GetGitlabPrivateTokenFromGlobalOrInteractive }}}
-"
-" s:GetWithCache {{{
-""
-" Get the needed argument using the cache as hint for the user.
-"
-" This function will ask the user for the given value. In case the value is
-" already in the cache, it will let the user an option to not insert it, and use
-" the value from the cache instead.
-" After the function will get the new value from the user, it will update the
-" cache with this value.
-function! s:GetWithCache(key)
-    if !empty(s:cache[a:key])
-        if s:plugin.Flag('automatically_insert_cache')
-            let l:current_value = s:cache[a:key]
-        else
-            let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
-        endif
-    else
-        let l:current_value = input(printf(s:insert_string_without_default, a:key))
-    endif
-    let s:cache[a:key] = l:current_value
-    return l:current_value
-endfunction
-" s:GetWithCache }}}
 
-" s:InputWithDefault {{{
+" Get Data Interactively }}}
+
+" Commands Interface {{{
+
+" s:CreatePositionDict {{{
 ""
-" Get the value for the given value, when there is a default value for the
-" wanted information.
-" This function will ask the user to insert the value for the key, prompting it
-" with a default value from the last time he inserted such value.
-function! s:InputWithDefault(key, default)
-    let l:current_value = input(printf(
-                \ s:insert_string_with_default,
-                \ a:key,
-                \ a:default))
-    if empty(l:current_value)
-        return a:default
-    endif
-    return l:current_value
+" Create the position dictionary from all its raw arguments.
+function! s:CreatePositionDict(
+            \ base_sha,
+            \ start_sha,
+            \ head_sha,
+            \ old_path,
+            \ new_path,
+            \ old_line,
+            \ new_line)
+    let l:position_dict = {}
+    let position_dict['base_sha'] = a:base_sha
+    let position_dict['start_sha'] = a:start_sha
+    let position_dict['head_sha'] = a:head_sha
+    let position_dict['position_type'] = 'text'
+    call s:AddIfNotEmpty(l:position_dict, 'old_path', a:old_path)
+    call s:AddIfNotEmpty(l:position_dict, 'new_path', a:new_path)
+    call s:AddIfNotEmpty(l:position_dict, 'old_line', a:old_line)
+    call s:AddIfNotEmpty(l:position_dict, 'new_line', a:new_line)
+    return {"position": l:position_dict}
 endfunction
-" s:InputWithDefault }}}
+" s:CreatePositionDict }}}
+
+" s:TurnBodyToContent {{{
+""
+" Turn the string value inserted to the function to the needed value as content.
+function! s:TurnBodyToContent(body)
+    return {'body' : a:body}
+endfunction
+" s:TurnBodyToContent }}}
 
 " s:GetGitlabPrivateTokenFromGlobal {{{
 ""
@@ -579,66 +1065,30 @@ function! s:GetGitlabPrivateTokenFromGlobal()
 endfunction
 " s:GetGitlabPrivateTokenFromGlobal }}}
 
-" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter {{{
-""
-" An adapter to the function of s:AddGeneralDiscussionThreadWithPrivateToken
-" that gets the arguments as a list.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter(
-            \ arguments_list)
-    return s:AddGeneralDiscussionThreadWithPrivateToken(
-                \ a:arguments_list[0],
-                \ a:arguments_list[1],
-                \ a:arguments_list[2],
-                \ a:arguments_list[3])
-endfunction
-" s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter }}}
-
-" s:AddGeneralDiscussionThreadWithPrivateToken {{{
-""
-" Add the given comment into the given gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:AddGeneralDiscussionThreadWithPrivateToken(
-            \ discussion_thread_body,
-            \ gitlab_private_token,
-            \ project_id,
-            \ merge_request_id)
-    return s:RunGitlabAction(
-        \ {'body': a:discussion_thread_body},
-        \ {'private_token': a:gitlab_private_token},
-        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
-        \ s:gitlab_actions.ADD_GENERAL_DISCUSSION_THREAD)
-endfunction
-" s:AddGeneralDiscussionThreadWithPrivateToken }}}
-
-" s:InteractiveAddCommentListArgumentAdapter {{{
-""
-" An adapter to the function of s:InteractiveAddComment that gets an argument of
-" list and discards it.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddCommentListArgumentAdapter(arguments_list)
-    return s:InteractiveAddComment()
-endfunction
-" s:InteractiveAddCommentListArgumentAdapter }}}
-
-" s:InteractiveAddComment {{{
-""
-" Add a comment to a gitlab MR interactively.
-"
-" This functions asks the user to insert all the needed information in order to
-" add a comment, and then adds this comment to the gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddComment()
-    return s:RunFunctionWithInteractiveBody(function('s:InteractiveAddCommentWithBody'))
-endfunction
-" s:InteractiveAddComment }}}
-
 " s:RunFunctionWithInteractiveBody {{{
 ""
 " Get the body interactively from the user, then run the function got as
 " argument.
 " Return whether the command that run has finished executing.
 function! s:RunFunctionWithInteractiveBody(function_to_run)
+    return s:RunFunctionWithInteractiveBodyAndParameter(
+                \ a:function_to_run,
+                \ '',
+                \ v:false)
+endfunction
+" s:RunFunctionWithInteractiveBody }}}
+
+" s:RunFunctionWithInteractiveBodyAndParameter {{{
+""
+" Get the body interactively from the user, then run the function got as
+" argument with its argument. In case the argument will be "null" it won't be
+" passed to the function. In case the parameter is not used, the command can run
+" without it (according to the value of `is_parameter_valid`).
+" Return whether the command that run has finished executing.
+function! s:RunFunctionWithInteractiveBodyAndParameter(
+            \ function_to_run,
+            \ function_parameter,
+            \ is_parameter_valid)
     if s:plugin.Flag('read_body_from_buffer')
         " Create the buffer
         let l:buffer_id = s:CreateScratchBuffer(
@@ -647,235 +1097,26 @@ function! s:RunFunctionWithInteractiveBody(function_to_run)
         " Set the rest of the functions to happen once the buffer has been
         " closed.
         let s:function_to_run = a:function_to_run
-        execute "autocmd BufWipeout <buffer=" . l:buffer_id . "> call s:GetContentAndRun(" . l:buffer_id . ", s:function_to_run)"
+        let s:function_parameter = a:function_parameter
+        let s:is_parameter_valid = a:is_parameter_valid
+        execute "autocmd BufWipeout <buffer=" . l:buffer_id . "> call s:GetContentAndRun(" . l:buffer_id . ", s:function_to_run, s:function_parameter, s:is_parameter_valid)"
         execute "autocmd BufWipeout <buffer=" . l:buffer_id . "> call s:DeleteArgument('s:function_to_run')"
+        execute "autocmd BufWipeout <buffer=" . l:buffer_id . "> call s:DeleteArgument('s:function_parameter')"
+        execute "autocmd BufWipeout <buffer=" . l:buffer_id . "> call s:DeleteArgument('s:is_parameter_valid')"
 
         " Return false - the command will continue to run once the buffer is
         " closed.
         return v:false
     else
         let l:body = s:InteractiveGetBody()
-        return a:function_to_run(l:body)
-    endif
-endfunction
-" s:RunFunctionWithInteractiveBody }}}
-
-" s:CreateScratchBuffer {{{
-""
-" Create a new scratch buffer in the window.
-" Return the id of this new buffer.
-function! s:CreateScratchBuffer(height)
-    execute a:height . " new"
-    setlocal buftype=nofile
-    setlocal bufhidden=wipe
-    setlocal noswapfile
-    return bufnr("%")
-endfunction
-" s:CreateScratchBuffer }}}
-
-" s:GetContentAndRun {{{
-""
-" Get the content from the given buffer and continue to run the command.
-" This function should be used whenever buffers should run and their content
-" should be used. It will continue from the previous content, and end the
-" command that started with them.
-"
-" When this function will end, in case the command really ended, it will call
-" the ExitCommand function.
-function! s:GetContentAndRun(buffer_id, function_to_run)
-    " Get the content of the buffer as a single line with characters of `\n` in
-    " it. This is done because this is the way that values should be sent over
-    " the network when new-lines are needed. The string of '\n' stays the same
-    " one (while "\n" turns to newline). It should stay this way.
-    let l:buffer_content = s:GetContentFromBuffer(a:buffer_id, '\n')
-
-    " Run the wanted function.
-    let l:command_finished = a:function_to_run(l:buffer_content)
-
-    " End the command in case it was finished now.
-    if l:command_finished
-        call s:ExitCommand()
-    endif
-endfunction
-" s:GetContentAndRun }}}
-
-" s:GetContentFromBuffer {{{
-""
-" Get the whole content from the buffer as a single string.
-" This function gets the line separator in order to support different kinds of
-" buffers and file types (for example, Unix VS Windows). It also supports custom
-" separator between the lines.
-function! s:GetContentFromBuffer(buffer_id, line_separator)
-    return join(getbufline(a:buffer_id, 1, "$"), a:line_separator)
-endfunction
-" s:GetContentFromBuffer }}}
-
-" s:DeleteArgument {{{
-""
-" Delete the given argument from the system.
-" This function will be used for script variables that are being used as context
-" between commands, but should not persist in the system for later (in order to
-" make sure that they are not being misused).
-function! s:DeleteArgument(arg_to_delete)
-    execute "unlet " . a:arg_to_delete
-endfunction
-" s:DeleteArgument }}}
-
-" s:InteractiveAddCommentWithBody {{{
-""
-" Add the comment interactively when the only value present is the body.
-" This function was created to support multiple ways to get the body from the
-" user.
-" In case the body is empty, no command will run.
-" Return whether the command that run has finished executing.
-function! s:InteractiveAddCommentWithBody(body)
-    if empty(a:body)
-        return v:true
-    endif
-
-    let l:content = s:TurnBodyToContent(a:body)
-    let l:gitlab_authentication = s:InteractiveGetGitlabAutentication()
-    let l:merge_request_information = s:InteractiveGetMergeRequestInformation()
-
-    " Add the comment.
-    return s:RunGitlabAction(
-        \ l:content,
-        \ l:gitlab_authentication,
-        \ l:merge_request_information,
-        \ s:gitlab_actions.ADD_COMMENT)
-endfunction
-" s:InteractiveAddCommentWithBody }}}
-
-" s:AddCommentListArgumentAdapter {{{
-""
-" An adapter to the function of s:AddComment that gets the arguments as a list
-" instead of as separated arguments.
-" Return whether the command that run has finished executing.
-function! s:AddCommentListArgumentAdapter(arguments_list)
-    return s:AddComment(
-        \ a:arguments_list[0],
-        \ a:arguments_list[1],
-        \ a:arguments_list[2])
-endfunction
-" s:AddCommentListArgumentAdapter }}}
-
-" s:AddCommentWithBodyListArgumentAdapter {{{
-""
-" An adepter to the function s:AddCommentWithBody that get the argument as
-" a list and passes it to the regular function.
-" Return whether the command that run has finished executing.
-function! s:AddCommentWithBodyListArgumentAdapter(arguments_list)
-    return s:AddCommentWithBody(a:arguments_list[0])
-endfunction
-" s:AddCommentWithBodyListArgumentAdapter }}}
-
-" s:AddCommentWithBody {{{
-""
-" Add a new comment with the given body.
-" This function get all the other arguments from the cache.
-" @throws String Error in case one (or more) of the arguments are not in the
-"         cache.
-" Return whether the command that run has finished executing.
-function! s:AddCommentWithBody(comment_body)
-    call s:VerifyInCache(['project id', 'merge request id'])
-
-    return s:AddComment(
-        \ a:comment_body,
-        \ s:cache['project id'],
-        \ s:cache['merge request id'])
-endfunction
-" s:AddCommentWithBody }}}
-
-" s:VerifyInCache {{{
-""
-" Verify that all the keys from the list exists in the cache.
-" @throws String Error in case one (or more) of the keys are not part of the
-"         cache.
-function! s:VerifyInCache(keys)
-    for l:current_key in a:keys
-        if empty(s:cache[l:current_key])
-            throw printf(
-                \ "Missing argument in cache. Key '%s' should be in cache.",
-                \ l:current_key)
+        if a:is_parameter_valid
+            return a:function_to_run(l:body, a:function_parameter)
+        else
+            return a:function_to_run(l:body)
         endif
-    endfor
+    endif
 endfunction
-" s:VerifyInCache }}}
-
-" s:AddComment {{{
-""
-" Add the given comment into the given gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:AddComment(
-            \ comment_body,
-            \ project_id,
-            \ merge_request_id)
-    return s:AddCommentWithPrivateToken(
-                \ a:comment_body,
-                \ s:GetGitlabPrivateTokenFromGlobal(),
-                \ a:project_id,
-                \ a:merge_request_id)
-endfunction
-" s:AddComment }}}
-
-" s:AddCommentWithPrivateTokenListArgumentAdapter {{{
-""
-" An adapter to the function of s:AddCommentWithPrivateToken that gets the
-" arguments as a list instead of as separated arguments.
-" Return whether the command that run has finished executing.
-function! s:AddCommentWithPrivateTokenListArgumentAdapter(arguments_list)
-    return s:AddCommentWithPrivateToken(
-        \ a:arguments_list[0],
-        \ a:arguments_list[1],
-        \ a:arguments_list[2],
-        \ a:arguments_list[3])
-endfunction
-" s:AddCommentWithPrivateTokenListArgumentAdapter }}}
-
-" s:AddCommentWithPrivateToken {{{
-""
-" Add the given comment into the given gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:AddCommentWithPrivateToken(
-            \ comment_body,
-            \ gitlab_private_token,
-            \ project_id,
-            \ merge_request_id)
-    return s:RunGitlabAction(
-        \ {'body': a:comment_body},
-        \ {'private_token':a:gitlab_private_token},
-        \ {'project_id': a:project_id, 'merge_request_id': a:merge_request_id},
-        \ s:gitlab_actions.ADD_COMMENT)
-endfunction
-" s:AddCommentWithPrivateToken }}}
-
-" s:RunGitlabAction {{{
-""
-" Add the given comment into the given gitlab's MR.
-" Return whether the command that run has finished executing.
-function! s:RunGitlabAction(
-            \ content,
-            \ gitlab_authentication,
-            \ merge_request_information,
-            \ gitlab_action)
-    " Create the command.
-    let l:command = s:CreateGitlabActionCommand(
-        \ a:content,
-        \ a:gitlab_authentication,
-        \ a:merge_request_information,
-        \ a:gitlab_action)
-
-    " Run the command.
-    let l:command_result = system(l:command)
-
-    " Check (and print message) about the command's result.
-    call s:ValidateCommandOutput(
-        \ l:command_result,
-        \ "Added comment successfully",
-        \ "Could not add comment. Error: ")
-    return v:true
-endfunction
-" s:RunGitlabAction }}}
+" s:RunFunctionWithInteractiveBodyAndParameter }}}
 
 " s:CreateGitlabActionCommand {{{
 ""
@@ -1014,19 +1255,111 @@ function! s:GetCommandOutputStatus(command_output)
 endfunction
 " s:GetCommandOutputStatus }}}
 
-" s:new_line_echom {{{
+" Commands Interface }}}
+
+" s:RunGitlabAction {{{
 ""
-" Echom the message in a new line.
-function! s:new_line_echom(message)
+" Add the given comment into the given gitlab's MR.
+" Return whether the command that run has finished executing.
+function! s:RunGitlabAction(
+            \ content,
+            \ gitlab_authentication,
+            \ merge_request_information,
+            \ gitlab_action)
+    " Create the command.
+    let l:command = s:CreateGitlabActionCommand(
+        \ a:content,
+        \ a:gitlab_authentication,
+        \ a:merge_request_information,
+        \ a:gitlab_action)
 
-    " The only function to clear the command is to run redraw, which would
-    " redraw the whole screen. To avoid it and set only this window, run this
-    " patch which would remove any message from there.
-    normal! :<esc>
-    echom a:message
+    " Run the command.
+    let l:command_result = system(l:command)
 
+    " Check (and print message) about the command's result.
+    call s:ValidateCommandOutput(
+        \ l:command_result,
+        \ "Added comment successfully",
+        \ "Could not add comment. Error: ")
+    return v:true
 endfunction
-" s:new_line_echom }}}
+" s:RunGitlabAction }}}
+
+" Gitlab Specific }}}
+
+" Git Specific {{{
+
+" s:GetCurrentCodePositionWithFugitive {{{
+""
+" Get the current position of the cursor.
+" In case the cursor is inside a file with fugitive-like file name, and the user
+" wanted to support fugitive, the position will be on the file as if it were the
+" regular file, not the fugitive one.
+" The function will return a dict that includes the full file path of the
+" current file, and the current line number in this path.
+function! s:GetCurrentCodePositionWithFugitive()
+    let l:position = s:GetCurrentCodePosition()
+
+    if s:plugin.Flag('support_fugitive_file_names')
+        let l:position['full_file_path'] =
+            \ s:GetFugitiveRealPath(l:position['full_file_path'])
+    endif
+
+    return l:position
+endfunction
+" s:GetCurrentCodePositionWithFugitive }}}
+
+" s:GetFugitiveRealPath {{{
+""
+" Get the real path of the file from the repository, in case it is opened as
+" a fugitive buffer
+function! s:GetFugitiveRealPath(fugitive_path)
+    return substitute(
+        \ a:fugitive_path,
+        \ 'fugitive.*git\/\/[0-9a-fA-F]\{40}\/',
+        \ '',
+        \ 'g')
+endfunction
+" s:GetFugitiveRealPath }}}
+
+" Git Specific }}}
+
+" Vimscript Utils {{{
+
+" Commands Interface {{{
+
+" s:GetArgumentsFromCommandLine {{{
+""
+" Turn a list of arguments from the ex-command into a real list of arguments.
+"
+" The original list of arguments is separated by spaces, but some of the words
+" there are part of the same argument (according to quotes). This list turn
+" a list separated by words to be separated by quotes.
+"
+" The function gets the list of arguments (according to vim's <f-args>) and
+" return a new list that was created according to the quotes and not spaces.
+function! s:GetArgumentsFromCommandLine(arguments)
+    let l:mutable_arguments = copy(a:arguments)
+    let l:result = []
+
+    " Move over the list, concatenating all the variables from the quotes
+    " together.
+    while len(l:mutable_arguments) != 0
+        let l:current_item = lh#command#Fargs2String(l:mutable_arguments)
+        call add(l:result, s:RemoveStringQuotes(l:current_item))
+    endwhile
+
+    return l:result
+endfunction
+" s:GetArgumentsFromCommandLine }}}
+
+" s:RemoveStringQuotes {{{
+""
+" Remove all the quotes from the string.
+function! s:RemoveStringQuotes(string)
+    return substitute(a:string, "[\"']", '', 'g')
+endfunction
+" s:RemoveStringQuotes }}}
 
 " s:RunCommandByNumberOfArguments {{{
 ""
@@ -1056,29 +1389,6 @@ function! s:RunCommandByNumberOfArguments(command_line_arguments, commands)
 endfunction
 " s:RunCommandByNumberOfArguments }}}
 
-" s:UpdateValueInCacheListArgumentAdapter {{{
-""
-" Call the function s:UpdateValueInCache with the proper parameters.
-function! s:UpdateValueInCacheListArgumentAdapter(arguments_list)
-    return s:UpdateValueInCache(a:arguments_list[0], a:arguments_list[1])
-endfunction
-" s:UpdateValueInCacheListArgumentAdapter }}}
-
-" s:UpdateValueInCache {{{
-""
-" Update the given argument in the cache.
-" @throws String Error in case the key does not present in the cache.
-function! s:UpdateValueInCache(key, value)
-    " Validate the key is in the cache.
-    if !has_key(s:cache, a:key)
-        throw printf("Key '%s' does not exist in the cache", a:key)
-    endif
-
-    " Update the key.
-    let s:cache[a:key] = a:value
-endfunction
-" s:UpdateValueInCache }}}
-
 " s:EnterCommand {{{
 ""
 " Update the needed variables when entering a new command.
@@ -1102,6 +1412,211 @@ function! s:ExitCommand()
     let s:is_in_command = v:false
 endfunction
 " s:ExitCommand }}}
+
+" Commands Interface }}}
+
+" s:GetCurrentCodePosition {{{
+""
+" Get the current position of the cursor.
+" The function will return a dict that includes the full file path of the
+" current file, and the current line number in this path.
+function! s:GetCurrentCodePosition()
+    let l:full_file_path = expand('%')
+    let l:line_number = line('.')
+    return {'full_file_path':l:full_file_path, 'line_number':l:line_number}
+endfunction
+" s:GetCurrentCodePosition }}}
+
+" s:AddIfNotEmpty {{{
+""
+" Add the current entry to the dictionary in case the value is not empty.
+" This functions assume that a string of `null` is an empty string.
+function! s:AddIfNotEmpty(dictionary_to_add, new_key, new_value)
+    if !empty(a:new_value) && (a:new_value != 'null')
+        let a:dictionary_to_add[a:new_key] = a:new_value
+    endif
+endfunction
+" s:AddIfNotEmpty }}}
+
+" Buffers {{{
+
+" s:CreateScratchBuffer {{{
+""
+" Create a new scratch buffer in the window.
+" Return the id of this new buffer.
+function! s:CreateScratchBuffer(height)
+    execute a:height . " new"
+    setlocal buftype=nofile
+    setlocal bufhidden=wipe
+    setlocal noswapfile
+    return bufnr("%")
+endfunction
+" s:CreateScratchBuffer }}}
+
+" s:GetContentAndRun {{{
+""
+" Get the content from the given buffer and continue to run the command.
+" This function should be used whenever buffers should run and their content
+" should be used. It will continue from the previous content, and end the
+" command that started with them.
+"
+" When this function will end, in case the command really ended, it will call
+" the ExitCommand function.
+function! s:GetContentAndRun(
+            \ buffer_id,
+            \ function_to_run,
+            \ additional_parameter,
+            \ is_additional_parameter_valid)
+    " Get the content of the buffer as a single line with characters of `\n` in
+    " it. This is done because this is the way that values should be sent over
+    " the network when new-lines are needed. The string of '\n' stays the same
+    " one (while "\n" turns to newline). It should stay this way.
+    let l:buffer_content = s:GetContentFromBuffer(a:buffer_id, '\n')
+
+    " Run the wanted function.
+    if a:is_additional_parameter_valid
+        let l:command_finished = a:function_to_run(
+            \ l:buffer_content,
+            \ a:additional_parameter)
+    else
+        let l:command_finished = a:function_to_run(l:buffer_content)
+    endif
+
+    " End the command in case it was finished now.
+    if l:command_finished
+        call s:ExitCommand()
+    endif
+endfunction
+" s:GetContentAndRun }}}
+
+" s:GetContentFromBuffer {{{
+""
+" Get the whole content from the buffer as a single string.
+" This function gets the line separator in order to support different kinds of
+" buffers and file types (for example, Unix VS Windows). It also supports custom
+" separator between the lines.
+function! s:GetContentFromBuffer(buffer_id, line_separator)
+    return join(getbufline(a:buffer_id, 1, "$"), a:line_separator)
+endfunction
+" s:GetContentFromBuffer }}}
+
+" Buffers }}}
+
+" s:DeleteArgument {{{
+""
+" Delete the given argument from the system.
+" This function will be used for script variables that are being used as context
+" between commands, but should not persist in the system for later (in order to
+" make sure that they are not being misused).
+function! s:DeleteArgument(arg_to_delete)
+    execute "unlet " . a:arg_to_delete
+endfunction
+" s:DeleteArgument }}}
+
+" s:new_line_echom {{{
+""
+" Echom the message in a new line.
+function! s:new_line_echom(message)
+
+    " The only function to clear the command is to run redraw, which would
+    " redraw the whole screen. To avoid it and set only this window, run this
+    " patch which would remove any message from there.
+    normal! :<esc>
+    echom a:message
+
+endfunction
+" s:new_line_echom }}}
+
+" Vimscript Utils }}}
+
+" Cache {{{
+
+" Update Value in Cache {{{
+
+" s:UpdateValueInCacheListArgumentAdapter {{{
+""
+" Call the function s:UpdateValueInCache with the proper parameters.
+function! s:UpdateValueInCacheListArgumentAdapter(arguments_list)
+    return s:UpdateValueInCache(a:arguments_list[0], a:arguments_list[1])
+endfunction
+" s:UpdateValueInCacheListArgumentAdapter }}}
+
+" s:UpdateValueInCache {{{
+""
+" Update the given argument in the cache.
+" @throws String Error in case the key does not present in the cache.
+function! s:UpdateValueInCache(key, value)
+    " Validate the key is in the cache.
+    if !has_key(s:cache, a:key)
+        throw printf("Key '%s' does not exist in the cache", a:key)
+    endif
+
+    " Update the key.
+    let s:cache[a:key] = a:value
+endfunction
+" s:UpdateValueInCache }}}
+
+" Update Value in Cache }}}
+
+" s:GetWithCache {{{
+""
+" Get the needed argument using the cache as hint for the user.
+"
+" This function will ask the user for the given value. In case the value is
+" already in the cache, it will let the user an option to not insert it, and use
+" the value from the cache instead.
+" After the function will get the new value from the user, it will update the
+" cache with this value.
+function! s:GetWithCache(key)
+    if !empty(s:cache[a:key])
+        if s:plugin.Flag('automatically_insert_cache')
+            let l:current_value = s:cache[a:key]
+        else
+            let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
+        endif
+    else
+        let l:current_value = input(printf(s:insert_string_without_default, a:key))
+    endif
+    let s:cache[a:key] = l:current_value
+    return l:current_value
+endfunction
+" s:GetWithCache }}}
+
+" s:InputWithDefault {{{
+""
+" Get the value for the given value, when there is a default value for the
+" wanted information.
+" This function will ask the user to insert the value for the key, prompting it
+" with a default value from the last time he inserted such value.
+function! s:InputWithDefault(key, default)
+    let l:current_value = input(printf(
+                \ s:insert_string_with_default,
+                \ a:key,
+                \ a:default))
+    if empty(l:current_value)
+        return a:default
+    endif
+    return l:current_value
+endfunction
+" s:InputWithDefault }}}
+
+" s:VerifyInCache {{{
+""
+" Verify that all the keys from the list exists in the cache.
+" @throws String Error in case one (or more) of the keys are not part of the
+"         cache.
+function! s:VerifyInCache(keys)
+    for l:current_key in a:keys
+        if empty(s:cache[l:current_key])
+            throw printf(
+                \ "Missing argument in cache. Key '%s' should be in cache.",
+                \ l:current_key)
+        endif
+    endfor
+endfunction
+" s:VerifyInCache }}}
+
+" Cache }}}
 
 " Internal Functions }}}
 
@@ -1201,6 +1716,70 @@ function! mr_interface#AddCodeDiscussionThread(...)
     endif
 endfunction
 " mr_interface#AddCodeDiscussionThread }}}
+
+" mr_interface#AddCodeDiscussionThreadOnOldCode {{{
+""
+" Add a code discussion thread to the gitlab MR.
+" This function can ran either with no arguments or with all the needed
+" arguments for adding a code discussion thread.
+" In case it is run without arguments, the user will be prompt to add the needed
+" arguments. In case it run with all the arguments, the discussion thread will
+" just be added to the MR. In case it was run with invalid number of arguments,
+" an error will be printed to the screen.
+function! mr_interface#AddCodeDiscussionThreadOnOldCode(...)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        let l:finished = s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+            \  1: function("s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter"),
+            \  6: function("s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+            \  7: function("s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter")})
+        if !l:finished
+            let l:should_finish_command = v:false
+        endif
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+endfunction
+" mr_interface#AddCodeDiscussionThreadOnOldCode }}}
+
+" mr_interface#AddCodeDiscussionThreadOnNewCode {{{
+""
+" Add a code discussion thread to the gitlab MR.
+" This function can ran either with no arguments or with all the needed
+" arguments for adding a code discussion thread.
+" In case it is run without arguments, the user will be prompt to add the needed
+" arguments. In case it run with all the arguments, the discussion thread will
+" just be added to the MR. In case it was run with invalid number of arguments,
+" an error will be printed to the screen.
+function! mr_interface#AddCodeDiscussionThreadOnNewCode(...)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        let l:finished = s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+            \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
+            \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+            \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
+        if !l:finished
+            let l:should_finish_command = v:false
+        endif
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+endfunction
+" mr_interface#AddCodeDiscussionThreadOnNewCode }}}
 
 " mr_interface#ResetCache {{{
 ""
