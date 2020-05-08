@@ -404,7 +404,10 @@ endfunction
 " discussion thread to the gitlab's MR.
 " Return whether the command that run has finished executing.
 function! s:InteractiveAddCodeDiscussionThreadWithBody(body)
-    " Don't run commands with empty body
+    " Don't run commands with empty body. This is code duplication with the
+    " check in InteractiveAddCodeDiscussionThreadWithBodyAndPosition, but it
+    " should be here as well in order to let the user finish the command earlier
+    " (since he needs to insert parameters in case it won't finish now).
     if empty(a:body)
         return v:true
     endif
@@ -424,6 +427,11 @@ endfunction
 function! s:InteractiveAddCodeDiscussionThreadWithBodyAndPosition(
             \ body,
             \ code_position)
+    " Don't run commands with empty body
+    if empty(a:body)
+        return v:true
+    endif
+
     " Get all the comments arguments.
     let l:content = s:InteractiveGetCodeDiscussionThreadContet(
         \ a:body,
