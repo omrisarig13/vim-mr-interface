@@ -190,3 +190,32 @@ call s:plugin.Flag('body_buffer_height', 5)
 " In case you don't want this functionality, and want to insert the body as all
 " the other variables (using the |input()| method), you can change the value of
 " @flag(read_body_from_buffer).
+
+""
+" @section Adding Comments On Unchanged Code, comments-on-unchanged-code
+" @parentsection commands
+" During some CRs, there is a need to add comments on code that was not changed
+" during the MR, but was affected by other changes in the code. It seems
+" reasonable that there would be a command that will add such comment (like the
+" commands of MRInterfaceAddCodeDiscussionThreadOnOldCode or
+" MRInterfaceAddCodeDiscussionThreadOnNewCode). However, there isn't such
+" command currently.
+"
+" The reason that there isn't such command is that adding command on unchanged
+" code is hard with the current API interface of gitlab. As for now, when adding
+" code on unchanged lines, there are two possible scenarios:
+"   * Code on file that was not changed - As for now, it is impossible. Gitlab
+"     doesn't allow users to add comments on files that weren't changed during
+"     the merge request. I recommend creating a regular discussion thread for
+"     this.
+"   * Unchanged code in a file that has changes - It is possible. However, when
+"     sending the comment to gitlab, the parameters should include both the line
+"     number in the old code, and the line number in the new code. As for now,
+"     it is impossible to do with the plugin in its own command, because the
+"     plugin can't know what is the line number of the code in the other
+"     revision (the line number can be different in case code was added or
+"     deleted before the current line). Such comments can be added by running
+"     the regular command (MRInterfaceAddGeneralDiscussionThread and writing
+"     manually the line numbers for the new discussion thread).
+"     It might be possible to support such comments in the future, when this
+"     plugin will support fugitive integration.
