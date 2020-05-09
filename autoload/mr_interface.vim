@@ -983,11 +983,25 @@ endfunction
 " Get all the needed information to add something into a merge request.
 function! s:InteractiveGetMergeRequestInformation()
     let l:project_id = s:GetWithCache('project id')
-    let l:merge_request_id = s:GetWithCache('merge request id')
+    let l:merge_request_id = s:GetMergeRequestId()
 
     return {'project_id': l:project_id, 'merge_request_id': l:merge_request_id}
 endfunction
 " s:InteractiveGetMergeRequestInformation }}}
+
+" s:GetMergeRequestId {{{
+""
+" Get the merge request id interactively.
+" In case the merge request id appears in the cache, it will return it from the
+" cache. If it is not in the cache, it will try to get it from the current
+" branch name. In case it is not the branch name, it will ask the user to insert
+" it.
+function! s:GetMergeRequestId()
+    return s:GetWithCacheAndDefaultMethod(
+        \ 'merge request id',
+        \ function("s:GetMRFromBranchName"))
+endfunction
+" s:GetMergeRequestId }}}
 
 " s:InteractiveGetGitlabAutentication {{{
 ""
@@ -1322,6 +1336,53 @@ function! s:GetFugitiveRealPath(fugitive_path)
 endfunction
 " s:GetFugitiveRealPath }}}
 
+" s:GetMRFromBranchName {{{
+""
+" Get the id of the current MR from the name of the current branch.
+" It will work in case the user has used the command of MR from `git-extras` (or
+" has a name with the same format).
+"
+" The function returns the number of the MR in case the branch name is right. It
+" will return v:null in case the branch is not an MR branch.
+function! s:GetMRFromBranchName()
+    let l:branch_name = s:GetCurrentBranchName()
+
+    if s:IsMRBranch(l:branch_name)
+        return s:GetMRNumberFromMRBranch(l:branch_name)
+    endif
+
+    return v:null
+endfunction
+" s:GetMRFromBranchName }}}
+
+" s:GetCurrentBranchName {{{
+""
+" Get the name of the current git branch.
+function! s:GetCurrentBranchName()
+    return system("git branch --show-current")
+endfunction
+" s:GetCurrentBranchName }}}
+
+" s:IsMRBranch {{{
+""
+" Check if the current branch is an MR branch.
+function! s:IsMRBranch(branch_name)
+    if match(a:branch_name, '^mr/[0-9]\+') != -1
+        return v:true
+    endif
+
+    return v:false
+endfunction
+" s:IsMRBranch }}}
+
+" s:GetMRNumberFromMRBranch {{{
+""
+" Get the number of the MR from the name of an MR branch.
+function! s:GetMRNumberFromMRBranch(branch_name)
+    return str2nr(substitute(a:branch_name, 'mr/\([0-9]\+\).*', '\1', 'g'))
+endfunction
+" s:GetMRNumberFromMRBranch }}}
+
 " Git Specific }}}
 
 " Vimscript Utils {{{
@@ -1568,19 +1629,65 @@ endfunction
 " After the function will get the new value from the user, it will update the
 " cache with this value.
 function! s:GetWithCache(key)
-    if !empty(s:cache[a:key])
-        if s:plugin.Flag('automatically_insert_cache')
-            let l:current_value = s:cache[a:key]
-        else
-            let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
-        endif
+    " Get the value
+    if s:IsInCache(a:key)
+        let l:current_value = s:GetFromCache(a:key)
     else
         let l:current_value = input(printf(s:insert_string_without_default, a:key))
     endif
+
+    " Update the cache.
     let s:cache[a:key] = l:current_value
+
+    " Return the value
     return l:current_value
 endfunction
 " s:GetWithCache }}}
+
+" s:GetWithCacheAndDefault {{{
+""
+" Get the needed argument using the cache as hint for the user or the default.
+" The value will be added from the cache in case it is there. If it is not in
+" the cache, it will be inserted from the defaults.
+function! s:GetWithCacheAndDefault(key, default)
+    " Get the value
+    if s:IsInCache(a:key)
+        let l:current_value = s:GetFromCache(a:key)
+    else
+        let l:current_value = s:GetFromDefault(a:key, a:default)
+    endif
+
+    " Update the cache.
+    let s:cache[a:key] = l:current_value
+
+    " Return the value
+    return l:current_value
+endfunction
+" s:GetWithCacheAndDefault }}}
+
+" s:GetFromCache {{{
+""
+" Get the value from the cache, when the value is inside the cache.
+function! s:GetFromCache(key)
+    if s:plugin.Flag('automatically_insert_cache')
+        return s:cache[a:key]
+    endif
+
+    return s:InputWithDefault(a:key, s:cache[a:key])
+endfunction
+" s:GetFromCache }}}
+
+" s:GetFromDefault {{{
+""
+" Get the value from the cache, when the value is inside the cache.
+function! s:GetFromDefault(key, default_value)
+    if s:plugin.Flag('automatically_insert_defaults')
+        return a:default_value
+    endif
+
+    return s:InputWithDefault(a:key, a:default_value)
+endfunction
+" s:GetFromDefault }}}
 
 " s:InputWithDefault {{{
 ""
@@ -1607,7 +1714,7 @@ endfunction
 "         cache.
 function! s:VerifyInCache(keys)
     for l:current_key in a:keys
-        if empty(s:cache[l:current_key])
+        if !s:IsInCache(l:current_key)
             throw printf(
                 \ "Missing argument in cache. Key '%s' should be in cache.",
                 \ l:current_key)
@@ -1616,6 +1723,43 @@ function! s:VerifyInCache(keys)
 endfunction
 " s:VerifyInCache }}}
 
+" s:IsInCache {{{
+""
+" Return v:true if the given value is inside the cache, v:false otherwise.
+function! s:IsInCache(key)
+    if empty(s:cache[a:key])
+        return v:false
+    endif
+
+    return v:true
+endfunction
+" s:IsInCache }}}
+
+" s:GetWithCacheAndDefaultMethod {{{
+""
+" Get the value for the given key with the cache and a function that will be
+" able to get default argument for this value.
+" In case the value will be inside the cache, the function will get it from the
+" cache. Otherwise, the function will try to get the default value and use it
+" for the value.
+function! s:GetWithCacheAndDefaultMethod(key, default_method)
+    if s:IsInCache(a:key)
+        return s:GetWithCache(a:key)
+    endif
+
+    let l:default_value = a:default_method()
+
+    if l:default_value == v:null
+        " Continue to call the get with Cache in order to update the cache, even
+        " though the key is not there.
+        return s:GetWithCache(a:key)
+    endif
+
+    " Continue to call the get with Cache in order to update the cache, even
+    " though the key is not there.
+    return s:GetWithCacheAndDefault(a:key, l:default_value)
+endfunction
+" s:GetWithCacheAndDefaultMethod }}}
 " Cache }}}
 
 " Internal Functions }}}

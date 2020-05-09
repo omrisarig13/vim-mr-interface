@@ -54,6 +54,14 @@ Save whether the plugin should use the cache value instantly, or always ask
 the user to insert the needed values.
 Default: v:true `
 
+                              *vim-mr-interface:automatically_insert_defaults*
+Save whether the plugin should use the default values it calculates by itself
+instantly, or always ask the user to insert the needed values.
+
+The values that the plugin can calculate by itself are:
+  * merge request id - from the current branch name.
+Default: v:true `
+
                                       *vim-mr-interface:read_body_from_buffer*
 Save whether the plugin should create a buffer whenever it needs to read the
 body of a message from the user, or get the body in the regular method.

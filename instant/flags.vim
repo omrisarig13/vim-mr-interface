@@ -54,6 +54,14 @@ call s:plugin.Flag('gitlab_private_token', '')
 call s:plugin.Flag('automatically_insert_cache', v:true)
 
 ""
+" Save whether the plugin should use the default values it calculates by itself
+" instantly, or always ask the user to insert the needed values.
+"
+" The values that the plugin can calculate by itself are:
+"   * merge request id - from the current branch name.
+call s:plugin.Flag('automatically_insert_defaults', v:true)
+
+""
 " Save whether the plugin should create a buffer whenever it needs to read the
 " body of a message from the user, or get the body in the regular method.
 "
