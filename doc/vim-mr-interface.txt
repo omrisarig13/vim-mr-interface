@@ -9,6 +9,7 @@ CONTENTS                                           *vim-mr-interface-contents*
   3. Commands......................................|vim-mr-interface-commands|
       1. Adding Comments On Unchanged Code...|vim-mr-interface-unchanged-code|
       2. Inserting Body......................|vim-mr-interface-inserting-body|
+      3. SHAs....................................|vim-mr-interface-sha-values|
   4. Cache............................................|vim-mr-interface-cache|
   5. Defaults Values.........................|vim-mr-interface-default-values|
       1. Default Merge Request ID.............|vim-mr-interface-default-mr-id|
@@ -116,6 +117,12 @@ This dictionary can be used to make the plugin understand automatically the id
 of the project from the name of its directory. This dictionary is case
 sensitive.
 Default: {} `
+
+                                    *vim-mr-interface:should_parse_references*
+Whether to parse or not parse the references that the plugin gets.
+
+For more information, read @setction(sha-values).
+Default: v:true `
 
                                            *vim-mr-interface:plugin[commands]*
 Configures whether plugin/commands.vim should be loaded.
@@ -393,6 +400,42 @@ the buffer empty, it will cancel the function.
 In case you don't want this functionality, and want to insert the body as all
 the other variables (using the |input()| method), you can change the value of
 |vim-mr-interface:read_body_from_buffer|.
+
+==============================================================================
+SHAS                                             *vim-mr-interface-sha-values*
+
+
+A lot of the command that are responsible on adding comments that are
+connected to the code needs SHAs of commits connected to them.
+
+Gitlab requires to get the full SHA of the commit in order to successfully add
+the comment and connect it to the code.
+
+The plugin doesn't need to get the full SHA of the commit in order to
+understand it, in case you are in the same repository.
+
+Whenever the plugin will need to send a SHA to gitlab, it will try to get the
+full sha using the command of `git rev-parse`, which mean that it will
+understand every git reference.
+
+It means that as long as you are in the same repository that you adds comments
+to, you can set any reference value that you want as the value of the SHA. It
+can be any one of the following (and probably some more):
+  * Partial SHA that points to a unique commit
+  * Full SHA of a commit
+  * Branch Name
+  * Tag Name
+  * HEAD
+  * Reference to other reference (HEAD~1, v1.0^, ffaabb~5...)
+
+
+In case you are not adding comments from the same repository (you are inside a
+different repository while you are adding the comments), there might be
+problems with this (in case you are referencing objects that exists (by
+accident) in both repositories).
+
+In this case, make sure to turn the flag of
+|vim-mr-interface:should_parse_references| off.
 
 ==============================================================================
 CACHE                                                 *vim-mr-interface-cache*

@@ -1032,9 +1032,9 @@ function! s:CreatePositionDict(
             \ old_line,
             \ new_line)
     let l:position_dict = {}
-    let position_dict['base_sha'] = a:base_sha
-    let position_dict['start_sha'] = a:start_sha
-    let position_dict['head_sha'] = a:head_sha
+    let position_dict['base_sha'] = s:GetFullSha(a:base_sha)
+    let position_dict['start_sha'] = s:GetFullSha(a:start_sha)
+    let position_dict['head_sha'] = s:GetFullSha(a:head_sha)
     let position_dict['position_type'] = 'text'
     call s:AddIfNotEmpty(l:position_dict, 'old_path', a:old_path)
     call s:AddIfNotEmpty(l:position_dict, 'new_path', a:new_path)
@@ -1377,6 +1377,22 @@ function! s:IsProjectRoot(directory)
     return maktaba#path#Exists(l:possible_git_dir)
 endfunction
 " s:IsProjectRoot }}}
+
+" s:GetFullSha {{{
+""
+" Get the full SHA for the given git reference.
+" A git reference is any reference in git that has a sha (branch name, commit name,
+" tag name...). This function will return the full SHA for any such reference.
+function! s:GetFullSha(git_reference)
+    let l:full_sha = system("git rev-parse " . a:git_reference)
+
+    if v:shell_error || !s:plugin.Flag('should_parse_references')
+        return a:git_reference
+    endif
+
+    return l:full_sha[:len(l:full_sha)-2]
+endfunction
+" s:GetFullSha }}}
 
 " Git Specific }}}
 

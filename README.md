@@ -201,6 +201,8 @@ In order to make the comment appear as change, you must specify the full sha of
 all the commits connected to it (base, head and start). If you don't specify the
 full hash, it will seem to work, however, the comment won't appear on the
 changes screen.
+In case you are inside the git repository you are using to add comments, the
+plugin should automatically send the full SHA.
 
 ### It is impossible to add comments on unmodified files
 

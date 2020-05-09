@@ -113,6 +113,12 @@ call s:plugin.Flag('support_fugitive_file_names', v:true)
 call s:plugin.Flag('names_to_id', {})
 
 ""
+" Whether to parse or not parse the references that the plugin gets.
+"
+" For more information, read @setction(sha-values).
+call s:plugin.Flag('should_parse_references', v:true)
+
+""
 " @section Cache Flags, cache-flags
 " @parentsection config
 " The values of the cache flags can be also used when configuring the
@@ -330,3 +336,39 @@ call s:plugin.Flag('names_to_id', {})
 "
 " That way, the plugin will be able to get the ID of all the projects that were
 " defined that way automatically as long as the user is working on them.
+
+""
+" @section SHAs, sha-values
+" @parentsection commands
+"
+" A lot of the command that are responsible on adding comments that are
+" connected to the code needs SHAs of commits connected to them.
+"
+" Gitlab requires to get the full SHA of the commit in order to successfully add
+" the comment and connect it to the code.
+"
+" The plugin doesn't need to get the full SHA of the commit in order to
+" understand it, in case you are in the same repository.
+"
+" Whenever the plugin will need to send a SHA to gitlab, it will try to get the
+" full sha using the command of `git rev-parse`, which mean that it will
+" understand every git reference.
+"
+" It means that as long as you are in the same repository that you adds comments
+" to, you can set any reference value that you want as the value of the SHA. It
+" can be any one of the following (and probably some more):
+"   * Partial SHA that points to a unique commit
+"   * Full SHA of a commit
+"   * Branch Name
+"   * Tag Name
+"   * HEAD
+"   * Reference to other reference (HEAD~1, v1.0^, ffaabb~5...)
+"
+"
+" In case you are not adding comments from the same repository (you are inside
+" a different repository while you are adding the comments), there might be
+" problems with this (in case you are referencing objects that exists (by
+" accident) in both repositories).
+"
+" In this case, make sure to turn the flag of @flag(should_parse_references)
+" off.
