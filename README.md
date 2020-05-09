@@ -318,7 +318,7 @@ released in versions later than the planned one (except for special cases).
 - [x] Add option to create comment on current line ([#8][i8])
 - [x] Add parameter calculation to the plugin ([#9][i9])
 - [x] Add documentation and recommended mappings ([#33][i33])
-- [ ] Release v0.2 ([#16][i16])
+- [x] Release v0.2 ([#16][i16])
 
 ### Release v1.0
 - [ ] Add code discussions using fugitive ([#10][i10])
