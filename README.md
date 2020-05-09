@@ -71,6 +71,14 @@ gitlab's web.
 * MRInterfaceAddCodeDiscussionThread - Add a discussion thread on specific
     location for the MR. This location currently can be only a line of text in
     one of the changed files (which is enough for almost anything).
+* MRInterfaceAddCodeDiscussionThreadOnOldCode - Add a discussion thread on
+    specific location from old code into the MR. This command will take the
+    current location of the cursor, assume that it is the desired location on an
+    old file and adds a code comment there.
+* MRInterfaceAddCodeDiscussionThreadOnNewCode - Add a discussion thread on
+    specific location from new code into the MR. This command will take the
+    current location of the cursor, assume that it is the desired location on an
+    new file and adds a code comment there.
 
 #### Cache Commands
 
@@ -83,6 +91,8 @@ The commands are:
 * MRInterfaceSetCache - Set all the values in the cache. You will be prompted to
     insert the values for the different keys one by one.
 * MRInterfaceUpdateValueInCache - Set a specific value in the cache.
+* MRInterfaceAddDefaultToCache - Add all the arguments that the plugin can
+    understand by itself into the cache.
 
 ### Configuration Options
 
