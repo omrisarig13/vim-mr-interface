@@ -104,6 +104,13 @@ call s:plugin.Flag('body_buffer_height', 5)
 " to be added to the gitlab as comments.
 call s:plugin.Flag('support_fugitive_file_names', v:true)
 
+""
+" A dictionary that maps between a project to its ID.
+"
+" This dictionary can be used to make the plugin understand automatically the id
+" of the project from the name of its directory.
+" This dictionary is case sensitive.
+call s:plugin.Flag('names_to_id', {})
 
 ""
 " @section Cache Flags, cache-flags
@@ -303,3 +310,23 @@ call s:plugin.Flag('support_fugitive_file_names', v:true)
 "   is worse than using the `git mr` command (because it is a lot more manually,
 "   and won't update autmotically), however, it will work the same for the
 "   plugin.
+
+""
+" @section Default Project ID, default-project-id
+" @parentsection default-values
+"
+" When sending commands to gitlab, it needs to know the ID of the project it
+" should add the comment into. Every project has a unique id that is being sent
+" to the gitlab.
+"
+" It is hard for the plugin to get the ID of the project completely
+" automatically (it might be supported in the future). For now, it can be done
+" semi-automatically.
+"
+" The plugin will be able to understand by itself the name of the directory for
+" the current project. The user should define the variable of @flag(names_to_id)
+" to include the name of the project as a key, and the ID of the project as the
+" value.
+"
+" That way, the plugin will be able to get the ID of all the projects that were
+" defined that way automatically as long as the user is working on them.

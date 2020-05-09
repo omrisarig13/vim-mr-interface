@@ -954,7 +954,7 @@ endfunction
 ""
 " Get all the needed information to add something into a merge request.
 function! s:InteractiveGetMergeRequestInformation()
-    let l:project_id = s:GetWithCache('project id')
+    let l:project_id = s:GetProjectId()
     let l:merge_request_id = s:GetMergeRequestId()
 
     return {'project_id': l:project_id, 'merge_request_id': l:merge_request_id}
@@ -974,6 +974,20 @@ function! s:GetMergeRequestId()
         \ s:keys_to_default_functions['merge request id'])
 endfunction
 " s:GetMergeRequestId }}}
+
+" s:GetProjectId {{{
+""
+" Get the merge request id interactively.
+" In case the merge request id appears in the cache, it will return it from the
+" cache. If it is not in the cache, it will try to get it from the current
+" branch name. In case it is not the branch name, it will ask the user to insert
+" it.
+function! s:GetProjectId()
+    return s:GetWithCacheAndDefaultMethod(
+        \ 'project id',
+        \ s:keys_to_default_functions['project id'])
+endfunction
+" s:GetProjectId }}}
 
 " s:InteractiveGetGitlabAutentication {{{
 ""
@@ -1355,6 +1369,15 @@ function! s:GetMRNumberFromMRBranch(branch_name)
 endfunction
 " s:GetMRNumberFromMRBranch }}}
 
+" s:IsProjectRoot {{{
+""
+" Checks if the current directory is the root of a git project.
+function! s:IsProjectRoot(directory)
+    let l:possible_git_dir = maktaba#path#Join([a:directory, '.git'])
+    return maktaba#path#Exists(l:possible_git_dir)
+endfunction
+" s:IsProjectRoot }}}
+
 " Git Specific }}}
 
 " Vimscript Utils {{{
@@ -1585,6 +1608,76 @@ function! s:new_line_echom(message)
 
 endfunction
 " s:new_line_echom }}}
+
+" Paths {{{
+
+" s:GetProjectDirectory {{{
+""
+" Get the name of the directory of the current git project.
+"
+" The function will start in the current working directory, move up every
+" directory and check for a directory that has a directory with the name of
+" `.git` in it.
+"
+" Returns the name of the project in case it was found, v:null in case it wasn't
+" found.
+function! s:GetProjectDirectory()
+    let l:directory = execute('pwd')[1:]
+
+    while l:directory != '\'
+        if s:IsProjectRoot(l:directory)
+            return s:GetLastDirectory(l:directory)
+        endif
+
+        let l:directory = s:GetParentDirectory(l:directory)
+    endwhile
+
+    return v:null
+endfunction
+" s:GetProjectDirectory }}}
+
+" s:GetLastDirectory {{{
+""
+" Get the last directory from the given path.
+" (returns `directory` from `/home/user/path/to/directory`)
+function! s:GetLastDirectory(full_path)
+    let l:directory_parts = maktaba#path#Split(a:full_path)
+
+    return l:directory_parts[len(l:directory_parts)-1]
+endfunction
+" s:GetLastDirectory }}}
+
+" s:GetParentDirectory {{{
+""
+" Get the path to the parent directory of the current path.
+function! s:GetParentDirectory(path)
+    let l:directory_parts = maktaba#path#Split(a:path)
+
+    return maktaba#path#Join(l:directory_parts[:len(l:directory_parts)-2])
+endfunction
+" s:GetParentDirectory }}}
+
+" Paths }}}
+
+" s:GetProjectIDFromDirectoryAndMap {{{
+""
+" Get the id of the project from the name of the project directory and the map
+" between directories and project IDs.
+"
+" Returns the project id in case it was found, v:null in case it was not found.
+function! s:GetProjectIDFromDirectoryAndMap()
+    let l:project_directory = s:GetProjectDirectory()
+    if l:project_directory == v:null
+        return v:null
+    endif
+
+    if !has_key(s:plugin.Flag('names_to_id'), l:project_directory)
+        return v:null
+    endif
+
+    return s:plugin.Flag('names_to_id')[l:project_directory]
+endfunction
+" s:GetProjectIDFromDirectoryAndMap }}}
 
 " Vimscript Utils }}}
 
@@ -1979,7 +2072,9 @@ let s:command_in_progress_error = "Another command is running. Can't run "
 
 ""
 " The keys that can be calculated using default functions, and their functions.
-let s:keys_to_default_functions = {'merge request id': function('s:GetMRFromBranchName')}
+let s:keys_to_default_functions = {
+            \ 'merge request id': function('s:GetMRFromBranchName'),
+            \ 'project id': function('s:GetProjectIDFromDirectoryAndMap')}
 
 " Constant Global Variables }}}
 

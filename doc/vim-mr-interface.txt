@@ -12,6 +12,7 @@ CONTENTS                                           *vim-mr-interface-contents*
   4. Cache............................................|vim-mr-interface-cache|
   5. Defaults Values.........................|vim-mr-interface-default-values|
       1. Default Merge Request ID.............|vim-mr-interface-default-mr-id|
+      2. Default Project ID..............|vim-mr-interface-default-project-id|
 
 ==============================================================================
 INTRODUCTION                                          *vim-mr-interface-intro*
@@ -107,6 +108,14 @@ case this flag will be true, whenever the plugin will get the file name, it
 will turn files from fugitive names into regular names, so they will be able
 to be added to the gitlab as comments.
 Default: v:true `
+
+                                                *vim-mr-interface:names_to_id*
+A dictionary that maps between a project to its ID.
+
+This dictionary can be used to make the plugin understand automatically the id
+of the project from the name of its directory. This dictionary is case
+sensitive.
+Default: {} `
 
                                            *vim-mr-interface:plugin[commands]*
 Configures whether plugin/commands.vim should be loaded.
@@ -495,6 +504,26 @@ The user can do one of two things in order to be in such branch:
     is worse than using the `git mr` command (because it is a lot more
     manually, and won't update autmotically), however, it will work the same
     for the plugin.
+
+==============================================================================
+DEFAULT PROJECT ID                       *vim-mr-interface-default-project-id*
+
+
+When sending commands to gitlab, it needs to know the ID of the project it
+should add the comment into. Every project has a unique id that is being sent
+to the gitlab.
+
+It is hard for the plugin to get the ID of the project completely
+automatically (it might be supported in the future). For now, it can be done
+semi-automatically.
+
+The plugin will be able to understand by itself the name of the directory for
+the current project. The user should define the variable of
+|vim-mr-interface:names_to_id| to include the name of the project as a key,
+and the ID of the project as the value.
+
+That way, the plugin will be able to get the ID of all the projects that were
+defined that way automatically as long as the user is working on them.
 
 
 vim:tw=78:ts=8:ft=help:norl:
