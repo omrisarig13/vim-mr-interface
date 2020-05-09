@@ -317,6 +317,7 @@ released in versions later than the planned one (except for special cases).
 - [x] Print errors for bad requests ([#29][i29])
 - [x] Add option to create comment on current line ([#8][i8])
 - [x] Add parameter calculation to the plugin ([#9][i9])
+- [x] Add documentation and recommended mappings ([#33][i33])
 - [ ] Release v0.2 ([#16][i16])
 
 ### Release v1.0
@@ -346,3 +347,4 @@ released in versions later than the planned one (except for special cases).
 [i16]: https://github.com/omrisarig13/vim-mr-interface/issues/16
 [i17]: https://github.com/omrisarig13/vim-mr-interface/issues/17
 [i29]: https://github.com/omrisarig13/vim-mr-interface/issues/29
+[i33]: https://github.com/omrisarig13/vim-mr-interface/issues/33
