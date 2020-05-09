@@ -1,84 +1,3 @@
-" Variables {{{
-
-" Constant Global Variables {{{
-
-""
-" An enum that will include all the possible commands.
-" @private
-let s:gitlab_actions = maktaba#enum#Create([
-            \ 'ADD_COMMENT',
-            \ 'ADD_GENERAL_DISCUSSION_THREAD',
-            \ 'ADD_CODE_DISCUSSION_THREAD'])
-
-""
-" The string for asking the user for a given key when there isn't any cache for
-" this value.
-" @private
-let s:insert_string_without_default = "Insert value for %s: "
-
-""
-" The string for asking the user for a given key when there is a value in the
-" cache for this value.
-" @private
-let s:insert_string_with_default = "Insert value for %s [%s]: "
-
-""
-" The string for telling the user that a command is already in progress
-let s:command_in_progress_error = "Another command is running. Can't run "
-            \ . "multiple command at the same time"
-
-" Constant Global Variables }}}
-
-" Global Variables {{{
-
-""
-" All the configured arguments.
-" @private
-let s:plugin = maktaba#plugin#Get('vim-mr-interface')
-
-if !exists("s:cache")
-    ""
-    " A cache that will be used to save old values inserted by the user.
-    "
-    " Many of the command in the plugin will run a lot of times with most of the
-    " same arguments. In order to make it easier for the user to use the plugin,
-    " the plugin will maintain a simple cache with the last inserted value in
-    " any such field.
-    "
-    " The values of the cache are being set here explicitly on purpose, in order
-    " to let functions iterate over them if needed, even when they are not set.
-    "
-    " This is not a configurable variable on purpose. The user should change
-    " this variable only by using the specific callbacks of the plugin, it
-    " should not be changed directly from the user, since it might break things
-    " in the plugin.
-    "
-    " Whenever you change any of the values here, make sure to update the
-    " documentation in the flags file as well. This is duplication and ugly, but
-    " I couldn't find a way to make vimdoc include only part of the file, so it
-    " will stay there for now.
-    " @private
-    let s:cache = {
-                \ 'base sha': '',
-                \ 'start sha': '',
-                \ 'head sha': '',
-                \ 'project id': '',
-                \ 'merge request id': '',
-                \ 'gitlab private token': ''}
-endif
-
-if !exists("s:is_in_command")
-    ""
-    " v:true in case the plugin is in the middle of command, v:false otherwise.
-    " This is important because commands doesn't always end when the function
-    " returns (for example, when waiting for output from buffer), so this flag
-    " will make sure that commands aren't mangled together.
-    let s:is_in_command = v:false
-endif
-
-" Global Variables }}}
-
-" Variables }}}
 
 " Functions {{{
 
@@ -903,6 +822,59 @@ endfunction
 
 " Add Code Discussion Thread }}}
 
+" Add Defaults To Cache {{{
+
+" s:AddAllDefaultsToCacheListAdaptor {{{
+""
+" An adapter to the function of s:AddAllDefaultsToCache that gets an argument of
+" list and discards it.
+" Return whether the command that run has finished executing.
+function! s:AddAllDefaultsToCacheListAdaptor(arguments_list)
+    return s:AddAllDefaultsToCache()
+endfunction
+" s:AddAllDefaultsToCacheListAdaptor }}}
+
+" s:AddAllDefaultsToCache {{{
+""
+" Add all the default values into the cache.
+" Return whether the command that run has finished executing.
+function! s:AddAllDefaultsToCache()
+    for l:key in keys(s:keys_to_default_functions)
+        call s:AddDefaultToCache(l:key , s:keys_to_default_functions[l:key])
+    endfor
+
+    return v:true
+endfunction
+" s:AddAllDefaultsToCache }}}
+
+" s:AddCurrentDefaultToCacheListAdaptor {{{
+""
+" An adapter to the function of s:AddCurrentDefaultToCache that gets an argument of
+" list passes the needed arguments from it into the internal function.
+" Return whether the command that run has finished executing.
+function! s:AddCurrentDefaultToCacheListAdaptor(arguments_list)
+    return s:AddCurrentDefaultToCache(a:arguments_list[0])
+endfunction
+" s:AddCurrentDefaultToCacheListAdaptor }}}
+
+" s:AddCurrentDefaultToCache {{{
+""
+" Add the default of the given key into the cache.
+" Return whether the command that run has finished executing.
+" @throws String Error in case the given key doesn't have method default method.
+function! s:AddCurrentDefaultToCache(key)
+    if !has_key(s:keys_to_default_functions, a:key)
+        throw a:key . " doesn't has a default function"
+    endif
+
+    call s:AddDefaultToCache(a:key , s:keys_to_default_functions[a:key])
+
+    return v:true
+endfunction
+" s:AddCurrentDefaultToCache }}}
+
+" Add Defaults To Cache }}}
+
 " Gitlab Specific {{{
 
 " Get Data Interactively {{{
@@ -999,7 +971,7 @@ endfunction
 function! s:GetMergeRequestId()
     return s:GetWithCacheAndDefaultMethod(
         \ 'merge request id',
-        \ function("s:GetMRFromBranchName"))
+        \ s:keys_to_default_functions['merge request id'])
 endfunction
 " s:GetMergeRequestId }}}
 
@@ -1761,6 +1733,23 @@ function! s:GetWithCacheAndDefaultMethod(key, default_method)
     return s:GetWithCache(a:key)
 endfunction
 " s:GetWithCacheAndDefaultMethod }}}
+
+" s:AddDefaultToCache {{{
+""
+" Get the value for the given key with the cache and a function that will be
+" able to get default argument for this value.
+" In case the value will be inside the cache, the function will get it from the
+" cache. Otherwise, the function will try to get the default value and use it
+" for the value.
+function! s:AddDefaultToCache(key, default_method)
+    let l:default_value = a:default_method()
+
+    if l:default_value != v:null
+        call s:UpdateValueInCache(a:key, l:default_value)
+    endif
+endfunction
+" s:AddDefaultToCache }}}
+
 " Cache }}}
 
 " Internal Functions }}}
@@ -1989,6 +1978,116 @@ function! mr_interface#UpdateValueInCache(...)
 endfunction
 " mr_interface#UpdateValueInCache }}}
 
+" mr_interface#AddDefaultToCache {{{
+""
+" Move over all the possible values that the plugin can calculate by itself, and
+" add the default values from there to the cache.
+function! mr_interface#AddDefaultToCache(...)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        call s:RunCommandByNumberOfArguments(
+            \ a:000,
+            \ {0: function("s:AddAllDefaultsToCacheListAdaptor"),
+            \  1: function("s:AddCurrentDefaultToCacheListAdaptor")})
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+    echom string(s:cache)
+endfunction
+" mr_interface#AddDefaultToCache }}}
+
 " Exported Functions }}}
 
 " Functions }}}
+
+" Variables {{{
+
+" Constant Global Variables {{{
+
+""
+" An enum that will include all the possible commands.
+" @private
+let s:gitlab_actions = maktaba#enum#Create([
+            \ 'ADD_COMMENT',
+            \ 'ADD_GENERAL_DISCUSSION_THREAD',
+            \ 'ADD_CODE_DISCUSSION_THREAD'])
+
+""
+" The string for asking the user for a given key when there isn't any cache for
+" this value.
+" @private
+let s:insert_string_without_default = "Insert value for %s: "
+
+""
+" The string for asking the user for a given key when there is a value in the
+" cache for this value.
+" @private
+let s:insert_string_with_default = "Insert value for %s [%s]: "
+
+""
+" The string for telling the user that a command is already in progress
+let s:command_in_progress_error = "Another command is running. Can't run "
+            \ . "multiple command at the same time"
+
+
+""
+" The keys that can be calculated using default functions, and their functions.
+let s:keys_to_default_functions = {'merge request id': function('s:GetMRFromBranchName')}
+
+" Constant Global Variables }}}
+
+" Global Variables {{{
+
+""
+" All the configured arguments.
+" @private
+let s:plugin = maktaba#plugin#Get('vim-mr-interface')
+
+if !exists("s:cache")
+    ""
+    " A cache that will be used to save old values inserted by the user.
+    "
+    " Many of the command in the plugin will run a lot of times with most of the
+    " same arguments. In order to make it easier for the user to use the plugin,
+    " the plugin will maintain a simple cache with the last inserted value in
+    " any such field.
+    "
+    " The values of the cache are being set here explicitly on purpose, in order
+    " to let functions iterate over them if needed, even when they are not set.
+    "
+    " This is not a configurable variable on purpose. The user should change
+    " this variable only by using the specific callbacks of the plugin, it
+    " should not be changed directly from the user, since it might break things
+    " in the plugin.
+    "
+    " Whenever you change any of the values here, make sure to update the
+    " documentation in the flags file as well. This is duplication and ugly, but
+    " I couldn't find a way to make vimdoc include only part of the file, so it
+    " will stay there for now.
+    " @private
+    let s:cache = {
+                \ 'base sha': '',
+                \ 'start sha': '',
+                \ 'head sha': '',
+                \ 'project id': '',
+                \ 'merge request id': '',
+                \ 'gitlab private token': ''}
+endif
+
+if !exists("s:is_in_command")
+    ""
+    " v:true in case the plugin is in the middle of command, v:false otherwise.
+    " This is important because commands doesn't always end when the function
+    " returns (for example, when waiting for output from buffer), so this flag
+    " will make sure that commands aren't mangled together.
+    let s:is_in_command = v:false
+endif
+
+" Global Variables }}}
+
+" Variables }}}

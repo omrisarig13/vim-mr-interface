@@ -307,6 +307,16 @@ COMMANDS                                           *vim-mr-interface-commands*
   For more information about the cache mechanism, see
   |vim-mr-interface-cache|.
 
+:MRInterfaceAddDefaultToCache                  *:MRInterfaceAddDefaultToCache*
+  Add all the default values that the plugin can calculate into the cache.
+
+
+:MRInterfaceAddDefaultToCache [key]
+  Add the default value for the given key into the cache.
+
+  For more information about the cache mechanism, see
+  |vim-mr-interface-cache|.
+
 ==============================================================================
 ADDING COMMENTS ON UNCHANGED CODE
                                  *vim-mr-interface-comments-on-unchanged-code*
