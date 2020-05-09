@@ -1394,6 +1394,32 @@ function! s:RemoveStringQuotes(string)
 endfunction
 " s:RemoveStringQuotes }}}
 
+" s:RunCommand {{{
+""
+" Run the command according to the dict of internal functions.
+"
+" This function will handle running the command and print errors in case any of
+" them raises during the running of it.
+function! s:RunCommand(command_line_arguments, commands)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        let l:finished = s:RunCommandByNumberOfArguments(
+            \ a:command_line_arguments,
+            \ a:commands)
+        if !l:finished
+            let l:should_finish_command = v:false
+        endif
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+endfunction
+" s:RunCommand }}}
+
 " s:RunCommandByNumberOfArguments {{{
 ""
 " Check how many arguments were inserted in the command line, and run the
@@ -1586,6 +1612,8 @@ function! s:UpdateValueInCache(key, value)
 
     " Update the key.
     let s:cache[a:key] = a:value
+
+    return v:true
 endfunction
 " s:UpdateValueInCache }}}
 
@@ -1766,25 +1794,12 @@ endfunction
 " added to the MR. In case it was run with invalid arguments, an error will be
 " printed to the screen.
 function! mr_interface#AddComment(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
-            \  1: function("s:AddCommentWithBodyListArgumentAdapter"),
-            \  3: function("s:AddCommentListArgumentAdapter"),
-            \  4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
+        \  1: function("s:AddCommentWithBodyListArgumentAdapter"),
+        \  3: function("s:AddCommentListArgumentAdapter"),
+        \  4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddComment }}}
 
@@ -1798,25 +1813,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid arguments, an error
 " will be printed to the screen.
 function! mr_interface#AddGeneralDiscussionThread(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
-            \  1: function("s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter"),
-            \  3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
-            \  4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
+        \  1: function("s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter"),
+        \  3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
+        \  4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddGeneralDiscussionThread }}}
 
@@ -1830,24 +1832,11 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThread(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
-            \ 10: function("s:AddCodeDiscussionThreadListArgumentAdapter"),
-            \ 11: function("s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
+        \ 10: function("s:AddCodeDiscussionThreadListArgumentAdapter"),
+        \ 11: function("s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThread }}}
 
@@ -1861,25 +1850,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThreadOnOldCode(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
-            \  1: function("s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter"),
-            \  6: function("s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
-            \  7: function("s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+        \  1: function("s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter"),
+        \  6: function("s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+        \  7: function("s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThreadOnOldCode }}}
 
@@ -1893,25 +1869,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThreadOnNewCode(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
-            \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
-            \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
-            \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+        \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
+        \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+        \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThreadOnNewCode }}}
 
@@ -1919,12 +1882,12 @@ endfunction
 ""
 " Reset the cache of the plugin.
 function! mr_interface#ResetCache()
-    let l:should_finish_command = v:false
+    let l:should_finish_command = v:fals:e
     try
         call s:EnterCommand()
         let l:should_finish_command = v:true
-        " This command will map all the currently existing variables of the cache to
-        " be empty strings (which are their default values.
+        " This command will map all the currently existing variables of the
+        " cache to be empty strings (which are their default values).
         call map(s:cache, '""')
     catch /.*/
         call maktaba#error#Shout(v:exception)
@@ -1962,19 +1925,9 @@ endfunction
 " cache. In case the key is not a valid key in the cache, an error will be
 " printed to the screen.
 function! mr_interface#UpdateValueInCache(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        call s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
 endfunction
 " mr_interface#UpdateValueInCache }}}
 
@@ -1983,21 +1936,10 @@ endfunction
 " Move over all the possible values that the plugin can calculate by itself, and
 " add the default values from there to the cache.
 function! mr_interface#AddDefaultToCache(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        call s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:AddAllDefaultsToCacheListAdaptor"),
-            \  1: function("s:AddCurrentDefaultToCacheListAdaptor")})
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
-    echom string(s:cache)
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:AddAllDefaultsToCacheListAdaptor"),
+        \  1: function("s:AddCurrentDefaultToCacheListAdaptor")})
 endfunction
 " mr_interface#AddDefaultToCache }}}
 
