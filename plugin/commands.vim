@@ -210,6 +210,7 @@ command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCa
 " Add the default value for the given key into the cache.
 "
 " For more information about the cache mechanism, see @section(cache).
+" For more information about default values, see @section(default-values).
 command -nargs=? MRInterfaceAddDefaultToCache call mr_interface#AddDefaultToCache(<f-args>)
 " MRInterfaceAddDefaultToCache }}}
 

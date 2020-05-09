@@ -8,7 +8,7 @@
 
 ""
 " @section Introduction, intro
-" @order intro config commands cache
+" @order intro config commands cache default-values
 " This plugin is a plugin that will let you write CRs on gitlab MRs directly
 " from vim.
 "
@@ -57,8 +57,7 @@ call s:plugin.Flag('automatically_insert_cache', v:true)
 " Save whether the plugin should use the default values it calculates by itself
 " instantly, or always ask the user to insert the needed values.
 "
-" The values that the plugin can calculate by itself are:
-"   * merge request id - from the current branch name.
+" For more information about default values, see @section(default-values).
 call s:plugin.Flag('automatically_insert_defaults', v:true)
 
 ""
@@ -77,6 +76,8 @@ call s:plugin.Flag('automatically_insert_defaults', v:true)
 " It is recommended to start the search in the cache, because it should be faster
 " for some values (when the getting of the default value require communication
 " with gitlab for example).
+"
+" For more information about default values, see @section(default-values).
 call s:plugin.Flag('use_cache_before_defaults', v:true)
 
 ""
@@ -229,7 +230,7 @@ call s:plugin.Flag('support_fugitive_file_names', v:true)
 " @flag(read_body_from_buffer).
 
 ""
-" @section Adding Comments On Unchanged Code, comments-on-unchanged-code
+" @section Adding Comments On Unchanged Code, unchanged-code
 " @parentsection commands
 " During some CRs, there is a need to add comments on code that was not changed
 " during the MR, but was affected by other changes in the code. It seems
@@ -256,3 +257,49 @@ call s:plugin.Flag('support_fugitive_file_names', v:true)
 "     manually the line numbers for the new discussion thread).
 "     It might be possible to support such comments in the future, when this
 "     plugin will support fugitive integration.
+
+""
+" @section Defaults Values, default-values
+"
+" The plugin has an calculate values for some of the needed values, and use them
+" as default values.
+"
+" This calculation is done using various git commands, using some global
+" variables and using the gitlab API to get more information for the different
+" variables.
+"
+" Any time the plugin will need to have a value for some variable in it, there
+" is an option that the plugin will calculate this value by itself, and use this
+" value as the default value.
+"
+" The default values will be used without asking the user about them. To
+" customize it (make the plugin ask the user before adding the default value),
+" see @flag(automatically_insert_defaults).
+"
+" The default values will be used only in case the values are not already in the
+" cache. To customize it, see @flag(use_cache_before_defaults)
+"
+" These are the keys that can have default values, with explanation about how
+" these default values are being calculated:
+
+""
+" @section Default Merge Request ID, default-mr-id
+" @parentsection default-values
+"
+" When sending commands to gitlab, it needs to know to which merge request it
+" should be added. Every merge request has a unique id that is being sent to the
+" gitlab.
+"
+" The plugin can get the merge request automatically in case the user is working
+" in a git repository on the branch of the merge request. Branches of a merge
+" request are branches that their name is from the format "mr/<MR_id>".
+"
+" The user can do one of two things in order to be in such branch:
+" * Get the merge request branch using `git mr`. This command is part of the
+"   git-extras repository. It moves you to a new branch, with the name from the
+"   given format, and on the head of this merge request. This is the recommended
+"   method.
+" * Create such branch. The user can also create a branch with this name. This
+"   is worse than using the `git mr` command (because it is a lot more manually,
+"   and won't update autmotically), however, it will work the same for the
+"   plugin.

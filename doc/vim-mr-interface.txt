@@ -7,10 +7,11 @@ CONTENTS                                           *vim-mr-interface-contents*
   2. Configuration...................................|vim-mr-interface-config|
       1. Cache Flags............................|vim-mr-interface-cache-flags|
   3. Commands......................................|vim-mr-interface-commands|
-      1. Adding Comments On Unchanged Code
-.................................|vim-mr-interface-comments-on-unchanged-code|
+      1. Adding Comments On Unchanged Code...|vim-mr-interface-unchanged-code|
       2. Inserting Body......................|vim-mr-interface-inserting-body|
   4. Cache............................................|vim-mr-interface-cache|
+  5. Defaults Values.........................|vim-mr-interface-default-values|
+      1. Default Merge Request ID.............|vim-mr-interface-default-mr-id|
 
 ==============================================================================
 INTRODUCTION                                          *vim-mr-interface-intro*
@@ -58,8 +59,8 @@ Default: v:true `
 Save whether the plugin should use the default values it calculates by itself
 instantly, or always ask the user to insert the needed values.
 
-The values that the plugin can calculate by itself are:
-  * merge request id - from the current branch name.
+For more information about default values, see
+|vim-mr-interface-default-values|.
 Default: v:true `
 
                                   *vim-mr-interface:use_cache_before_defaults*
@@ -77,6 +78,9 @@ get the value from the cache.
 It is recommended to start the search in the cache, because it should be
 faster for some values (when the getting of the default value require
 communication with gitlab for example).
+
+For more information about default values, see
+|vim-mr-interface-default-values|.
 Default: v:true `
 
                                       *vim-mr-interface:read_body_from_buffer*
@@ -315,11 +319,11 @@ COMMANDS                                           *vim-mr-interface-commands*
   Add the default value for the given key into the cache.
 
   For more information about the cache mechanism, see
-  |vim-mr-interface-cache|.
+  |vim-mr-interface-cache|. For more information about default values, see
+  |vim-mr-interface-default-values|.
 
 ==============================================================================
-ADDING COMMENTS ON UNCHANGED CODE
-                                 *vim-mr-interface-comments-on-unchanged-code*
+ADDING COMMENTS ON UNCHANGED CODE            *vim-mr-interface-unchanged-code*
 
 During some CRs, there is a need to add comments on code that was not changed
 during the MR, but was affected by other changes in the code. It seems
@@ -444,6 +448,53 @@ old values when they no longer makes sense.
 In case you don't want to use the values as cache, you can just use them as
 regular global values by setting them explicitly in your vimrc according to
 the instructions from here: |vim-mr-interface-cache-flags|
+
+==============================================================================
+DEFAULTS VALUES                              *vim-mr-interface-default-values*
+
+
+The plugin has an calculate values for some of the needed values, and use them
+as default values.
+
+This calculation is done using various git commands, using some global
+variables and using the gitlab API to get more information for the different
+variables.
+
+Any time the plugin will need to have a value for some variable in it, there
+is an option that the plugin will calculate this value by itself, and use this
+value as the default value.
+
+The default values will be used without asking the user about them. To
+customize it (make the plugin ask the user before adding the default value),
+see |vim-mr-interface:automatically_insert_defaults|.
+
+The default values will be used only in case the values are not already in the
+cache. To customize it, see |vim-mr-interface:use_cache_before_defaults|
+
+These are the keys that can have default values, with explanation about how
+these default values are being calculated:
+
+==============================================================================
+DEFAULT MERGE REQUEST ID                      *vim-mr-interface-default-mr-id*
+
+
+When sending commands to gitlab, it needs to know to which merge request it
+should be added. Every merge request has a unique id that is being sent to the
+gitlab.
+
+The plugin can get the merge request automatically in case the user is working
+in a git repository on the branch of the merge request. Branches of a merge
+request are branches that their name is from the format "mr/<MR_id>".
+
+The user can do one of two things in order to be in such branch:
+  * Get the merge request branch using `git mr`. This command is part of the
+    git-extras repository. It moves you to a new branch, with the name from
+    the given format, and on the head of this merge request. This is the
+    recommended method.
+  * Create such branch. The user can also create a branch with this name. This
+    is worse than using the `git mr` command (because it is a lot more
+    manually, and won't update autmotically), however, it will work the same
+    for the plugin.
 
 
 vim:tw=78:ts=8:ft=help:norl:
