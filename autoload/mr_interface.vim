@@ -1743,21 +1743,22 @@ endfunction
 " cache. Otherwise, the function will try to get the default value and use it
 " for the value.
 function! s:GetWithCacheAndDefaultMethod(key, default_method)
-    if s:IsInCache(a:key)
-        return s:GetWithCache(a:key)
+    if s:plugin.Flag('use_cache_before_defaults')
+        if s:IsInCache(a:key)
+            return s:GetWithCache(a:key)
+        endif
     endif
 
     let l:default_value = a:default_method()
-
-    if l:default_value == v:null
+    if l:default_value != v:null
         " Continue to call the get with Cache in order to update the cache, even
         " though the key is not there.
-        return s:GetWithCache(a:key)
+        return s:GetWithCacheAndDefault(a:key, l:default_value)
     endif
 
     " Continue to call the get with Cache in order to update the cache, even
     " though the key is not there.
-    return s:GetWithCacheAndDefault(a:key, l:default_value)
+    return s:GetWithCache(a:key)
 endfunction
 " s:GetWithCacheAndDefaultMethod }}}
 " Cache }}}

@@ -62,6 +62,24 @@ call s:plugin.Flag('automatically_insert_cache', v:true)
 call s:plugin.Flag('automatically_insert_defaults', v:true)
 
 ""
+" Whenever the plugin need to get data, it has three methods to do so:
+"   * Get the data from the cache.
+"   * Get the data from default the plugins calculates.
+"   * Get the data directly from the user.
+" This flag control the order in which the plugin will try to get the data. In
+" case the value of this flag will be true, the plugin will start by searching
+" for the value in the cache, and only if it is not in the cache, it will use
+" the default.
+" In case the flag will be false, the plugin will start by looking for the value
+" in the defaults, and only if it can't get it from there, it will get the value
+" from the cache.
+"
+" It is recommended to start the search in the cache, because it should be faster
+" for some values (when the getting of the default value require communication
+" with gitlab for example).
+call s:plugin.Flag('use_cache_before_defaults', v:true)
+
+""
 " Save whether the plugin should create a buffer whenever it needs to read the
 " body of a message from the user, or get the body in the regular method.
 "
