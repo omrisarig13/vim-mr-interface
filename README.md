@@ -7,6 +7,7 @@
         * [Gitlab Commands](#gitlab-commands)
         * [Cache Commands](#cache-commands)
     * [Configuration Options](#configuration-options)
+    * [Mappings](#mappings)
 * [Installation](#installation)
     * [Vundle](#vundle)
     * [Dependencies](#dependencies)
@@ -105,6 +106,27 @@ These flags should be configured using
 * gitlab_private_token - Your private token to authenticate with gitlab.
 * automatically_insert_cache - Should the cache be inserted authomatically, or
     should it be only the default.
+
+### Mappings
+
+This plugin doesn't define any default mappings by itself. Adding mappings might
+be annoying to user who customize their vim a lot (it can run over other used
+mappings, for example). Moreover, the plugin has only commands, adding mapping
+to them doesn't add any additional value except the speed of using these
+commands.
+
+You can add mappings by yourself into your .vimrc in order to make the plugin
+easier to user.
+
+Here is an example for mappings that can be used with this plugin:
+```vim
+nnoremap <unique> <silent> <leader>mc :MRInterfaceAddComment<CR>
+nnoremap <unique> <silent> <leader>md :MRInterfaceAddGeneralDiscussionThread<CR>
+nnoremap <unique> <silent> <leader>mC :MRInterfaceAddCodeDiscussionThread<CR>
+nnoremap <unique> <silent> <leader>mo :MRInterfaceAddCodeDiscussionThreadOnOldCode<CR>
+nnoremap <unique> <silent> <leader>mn :MRInterfaceAddCodeDiscussionThreadOnNewCode<CR>
+nnoremap <unique> <silent> <leader>ma :MRInterfaceAddDefaultToCache<CR>
+```
 
 ## Installation
 
