@@ -201,4 +201,17 @@ command -nargs=0 MRInterfaceSetCache call mr_interface#SetCache()
 command -nargs=+ MRInterfaceUpdateValueInCache call mr_interface#UpdateValueInCache(<f-args>)
 " MRInterfaceUpdateValueInCache }}}
 
+" MRInterfaceAddDefaultToCache {{{
+""
+" @usage
+" Add all the default values that the plugin can calculate into the cache.
+"
+" @usage [key]
+" Add the default value for the given key into the cache.
+"
+" For more information about the cache mechanism, see @section(cache).
+" For more information about default values, see @section(default-values).
+command -nargs=? MRInterfaceAddDefaultToCache call mr_interface#AddDefaultToCache(<f-args>)
+" MRInterfaceAddDefaultToCache }}}
+
 " Commands }}}

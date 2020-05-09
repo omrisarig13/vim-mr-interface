@@ -1,84 +1,3 @@
-" Variables {{{
-
-" Constant Global Variables {{{
-
-""
-" An enum that will include all the possible commands.
-" @private
-let s:gitlab_actions = maktaba#enum#Create([
-            \ 'ADD_COMMENT',
-            \ 'ADD_GENERAL_DISCUSSION_THREAD',
-            \ 'ADD_CODE_DISCUSSION_THREAD'])
-
-""
-" The string for asking the user for a given key when there isn't any cache for
-" this value.
-" @private
-let s:insert_string_without_default = "Insert value for %s: "
-
-""
-" The string for asking the user for a given key when there is a value in the
-" cache for this value.
-" @private
-let s:insert_string_with_default = "Insert value for %s [%s]: "
-
-""
-" The string for telling the user that a command is already in progress
-let s:command_in_progress_error = "Another command is running. Can't run "
-            \ . "multiple command at the same time"
-
-" Constant Global Variables }}}
-
-" Global Variables {{{
-
-""
-" All the configured arguments.
-" @private
-let s:plugin = maktaba#plugin#Get('vim-mr-interface')
-
-if !exists("s:cache")
-    ""
-    " A cache that will be used to save old values inserted by the user.
-    "
-    " Many of the command in the plugin will run a lot of times with most of the
-    " same arguments. In order to make it easier for the user to use the plugin,
-    " the plugin will maintain a simple cache with the last inserted value in
-    " any such field.
-    "
-    " The values of the cache are being set here explicitly on purpose, in order
-    " to let functions iterate over them if needed, even when they are not set.
-    "
-    " This is not a configurable variable on purpose. The user should change
-    " this variable only by using the specific callbacks of the plugin, it
-    " should not be changed directly from the user, since it might break things
-    " in the plugin.
-    "
-    " Whenever you change any of the values here, make sure to update the
-    " documentation in the flags file as well. This is duplication and ugly, but
-    " I couldn't find a way to make vimdoc include only part of the file, so it
-    " will stay there for now.
-    " @private
-    let s:cache = {
-                \ 'base sha': '',
-                \ 'start sha': '',
-                \ 'head sha': '',
-                \ 'project id': '',
-                \ 'merge request id': '',
-                \ 'gitlab private token': ''}
-endif
-
-if !exists("s:is_in_command")
-    ""
-    " v:true in case the plugin is in the middle of command, v:false otherwise.
-    " This is important because commands doesn't always end when the function
-    " returns (for example, when waiting for output from buffer), so this flag
-    " will make sure that commands aren't mangled together.
-    let s:is_in_command = v:false
-endif
-
-" Global Variables }}}
-
-" Variables }}}
 
 " Functions {{{
 
@@ -903,6 +822,59 @@ endfunction
 
 " Add Code Discussion Thread }}}
 
+" Add Defaults To Cache {{{
+
+" s:AddAllDefaultsToCacheListAdaptor {{{
+""
+" An adapter to the function of s:AddAllDefaultsToCache that gets an argument of
+" list and discards it.
+" Return whether the command that run has finished executing.
+function! s:AddAllDefaultsToCacheListAdaptor(arguments_list)
+    return s:AddAllDefaultsToCache()
+endfunction
+" s:AddAllDefaultsToCacheListAdaptor }}}
+
+" s:AddAllDefaultsToCache {{{
+""
+" Add all the default values into the cache.
+" Return whether the command that run has finished executing.
+function! s:AddAllDefaultsToCache()
+    for l:key in keys(s:keys_to_default_functions)
+        call s:AddDefaultToCache(l:key , s:keys_to_default_functions[l:key])
+    endfor
+
+    return v:true
+endfunction
+" s:AddAllDefaultsToCache }}}
+
+" s:AddCurrentDefaultToCacheListAdaptor {{{
+""
+" An adapter to the function of s:AddCurrentDefaultToCache that gets an argument of
+" list passes the needed arguments from it into the internal function.
+" Return whether the command that run has finished executing.
+function! s:AddCurrentDefaultToCacheListAdaptor(arguments_list)
+    return s:AddCurrentDefaultToCache(a:arguments_list[0])
+endfunction
+" s:AddCurrentDefaultToCacheListAdaptor }}}
+
+" s:AddCurrentDefaultToCache {{{
+""
+" Add the default of the given key into the cache.
+" Return whether the command that run has finished executing.
+" @throws String Error in case the given key doesn't have method default method.
+function! s:AddCurrentDefaultToCache(key)
+    if !has_key(s:keys_to_default_functions, a:key)
+        throw a:key . " doesn't has a default function"
+    endif
+
+    call s:AddDefaultToCache(a:key , s:keys_to_default_functions[a:key])
+
+    return v:true
+endfunction
+" s:AddCurrentDefaultToCache }}}
+
+" Add Defaults To Cache }}}
+
 " Gitlab Specific {{{
 
 " Get Data Interactively {{{
@@ -982,12 +954,40 @@ endfunction
 ""
 " Get all the needed information to add something into a merge request.
 function! s:InteractiveGetMergeRequestInformation()
-    let l:project_id = s:GetWithCache('project id')
-    let l:merge_request_id = s:GetWithCache('merge request id')
+    let l:project_id = s:GetProjectId()
+    let l:merge_request_id = s:GetMergeRequestId()
 
     return {'project_id': l:project_id, 'merge_request_id': l:merge_request_id}
 endfunction
 " s:InteractiveGetMergeRequestInformation }}}
+
+" s:GetMergeRequestId {{{
+""
+" Get the merge request id interactively.
+" In case the merge request id appears in the cache, it will return it from the
+" cache. If it is not in the cache, it will try to get it from the current
+" branch name. In case it is not the branch name, it will ask the user to insert
+" it.
+function! s:GetMergeRequestId()
+    return s:GetWithCacheAndDefaultMethod(
+        \ 'merge request id',
+        \ s:keys_to_default_functions['merge request id'])
+endfunction
+" s:GetMergeRequestId }}}
+
+" s:GetProjectId {{{
+""
+" Get the merge request id interactively.
+" In case the merge request id appears in the cache, it will return it from the
+" cache. If it is not in the cache, it will try to get it from the current
+" branch name. In case it is not the branch name, it will ask the user to insert
+" it.
+function! s:GetProjectId()
+    return s:GetWithCacheAndDefaultMethod(
+        \ 'project id',
+        \ s:keys_to_default_functions['project id'])
+endfunction
+" s:GetProjectId }}}
 
 " s:InteractiveGetGitlabAutentication {{{
 ""
@@ -1032,9 +1032,9 @@ function! s:CreatePositionDict(
             \ old_line,
             \ new_line)
     let l:position_dict = {}
-    let position_dict['base_sha'] = a:base_sha
-    let position_dict['start_sha'] = a:start_sha
-    let position_dict['head_sha'] = a:head_sha
+    let position_dict['base_sha'] = s:GetFullSha(a:base_sha)
+    let position_dict['start_sha'] = s:GetFullSha(a:start_sha)
+    let position_dict['head_sha'] = s:GetFullSha(a:head_sha)
     let position_dict['position_type'] = 'text'
     call s:AddIfNotEmpty(l:position_dict, 'old_path', a:old_path)
     call s:AddIfNotEmpty(l:position_dict, 'new_path', a:new_path)
@@ -1322,6 +1322,78 @@ function! s:GetFugitiveRealPath(fugitive_path)
 endfunction
 " s:GetFugitiveRealPath }}}
 
+" s:GetMRFromBranchName {{{
+""
+" Get the id of the current MR from the name of the current branch.
+" It will work in case the user has used the command of MR from `git-extras` (or
+" has a name with the same format).
+"
+" The function returns the number of the MR in case the branch name is right. It
+" will return v:null in case the branch is not an MR branch.
+function! s:GetMRFromBranchName()
+    let l:branch_name = s:GetCurrentBranchName()
+
+    if s:IsMRBranch(l:branch_name)
+        return s:GetMRNumberFromMRBranch(l:branch_name)
+    endif
+
+    return v:null
+endfunction
+" s:GetMRFromBranchName }}}
+
+" s:GetCurrentBranchName {{{
+""
+" Get the name of the current git branch.
+function! s:GetCurrentBranchName()
+    return system("git branch --show-current")
+endfunction
+" s:GetCurrentBranchName }}}
+
+" s:IsMRBranch {{{
+""
+" Check if the current branch is an MR branch.
+function! s:IsMRBranch(branch_name)
+    if match(a:branch_name, '^mr/[0-9]\+') != -1
+        return v:true
+    endif
+
+    return v:false
+endfunction
+" s:IsMRBranch }}}
+
+" s:GetMRNumberFromMRBranch {{{
+""
+" Get the number of the MR from the name of an MR branch.
+function! s:GetMRNumberFromMRBranch(branch_name)
+    return str2nr(substitute(a:branch_name, 'mr/\([0-9]\+\).*', '\1', 'g'))
+endfunction
+" s:GetMRNumberFromMRBranch }}}
+
+" s:IsProjectRoot {{{
+""
+" Checks if the current directory is the root of a git project.
+function! s:IsProjectRoot(directory)
+    let l:possible_git_dir = maktaba#path#Join([a:directory, '.git'])
+    return maktaba#path#Exists(l:possible_git_dir)
+endfunction
+" s:IsProjectRoot }}}
+
+" s:GetFullSha {{{
+""
+" Get the full SHA for the given git reference.
+" A git reference is any reference in git that has a sha (branch name, commit name,
+" tag name...). This function will return the full SHA for any such reference.
+function! s:GetFullSha(git_reference)
+    let l:full_sha = system("git rev-parse " . a:git_reference)
+
+    if v:shell_error || !s:plugin.Flag('should_parse_references')
+        return a:git_reference
+    endif
+
+    return l:full_sha[:len(l:full_sha)-2]
+endfunction
+" s:GetFullSha }}}
+
 " Git Specific }}}
 
 " Vimscript Utils {{{
@@ -1360,6 +1432,32 @@ function! s:RemoveStringQuotes(string)
     return substitute(a:string, "[\"']", '', 'g')
 endfunction
 " s:RemoveStringQuotes }}}
+
+" s:RunCommand {{{
+""
+" Run the command according to the dict of internal functions.
+"
+" This function will handle running the command and print errors in case any of
+" them raises during the running of it.
+function! s:RunCommand(command_line_arguments, commands)
+    let l:should_finish_command = v:false
+    try
+        call s:EnterCommand()
+        let l:should_finish_command = v:true
+        let l:finished = s:RunCommandByNumberOfArguments(
+            \ a:command_line_arguments,
+            \ a:commands)
+        if !l:finished
+            let l:should_finish_command = v:false
+        endif
+    catch /.*/
+        call maktaba#error#Shout(v:exception)
+    endtry
+    if l:should_finish_command
+        call s:ExitCommand()
+    endif
+endfunction
+" s:RunCommand }}}
 
 " s:RunCommandByNumberOfArguments {{{
 ""
@@ -1527,6 +1625,76 @@ function! s:new_line_echom(message)
 endfunction
 " s:new_line_echom }}}
 
+" Paths {{{
+
+" s:GetProjectDirectory {{{
+""
+" Get the name of the directory of the current git project.
+"
+" The function will start in the current working directory, move up every
+" directory and check for a directory that has a directory with the name of
+" `.git` in it.
+"
+" Returns the name of the project in case it was found, v:null in case it wasn't
+" found.
+function! s:GetProjectDirectory()
+    let l:directory = execute('pwd')[1:]
+
+    while l:directory != '\'
+        if s:IsProjectRoot(l:directory)
+            return s:GetLastDirectory(l:directory)
+        endif
+
+        let l:directory = s:GetParentDirectory(l:directory)
+    endwhile
+
+    return v:null
+endfunction
+" s:GetProjectDirectory }}}
+
+" s:GetLastDirectory {{{
+""
+" Get the last directory from the given path.
+" (returns `directory` from `/home/user/path/to/directory`)
+function! s:GetLastDirectory(full_path)
+    let l:directory_parts = maktaba#path#Split(a:full_path)
+
+    return l:directory_parts[len(l:directory_parts)-1]
+endfunction
+" s:GetLastDirectory }}}
+
+" s:GetParentDirectory {{{
+""
+" Get the path to the parent directory of the current path.
+function! s:GetParentDirectory(path)
+    let l:directory_parts = maktaba#path#Split(a:path)
+
+    return maktaba#path#Join(l:directory_parts[:len(l:directory_parts)-2])
+endfunction
+" s:GetParentDirectory }}}
+
+" Paths }}}
+
+" s:GetProjectIDFromDirectoryAndMap {{{
+""
+" Get the id of the project from the name of the project directory and the map
+" between directories and project IDs.
+"
+" Returns the project id in case it was found, v:null in case it was not found.
+function! s:GetProjectIDFromDirectoryAndMap()
+    let l:project_directory = s:GetProjectDirectory()
+    if l:project_directory == v:null
+        return v:null
+    endif
+
+    if !has_key(s:plugin.Flag('names_to_id'), l:project_directory)
+        return v:null
+    endif
+
+    return s:plugin.Flag('names_to_id')[l:project_directory]
+endfunction
+" s:GetProjectIDFromDirectoryAndMap }}}
+
 " Vimscript Utils }}}
 
 " Cache {{{
@@ -1553,6 +1721,8 @@ function! s:UpdateValueInCache(key, value)
 
     " Update the key.
     let s:cache[a:key] = a:value
+
+    return v:true
 endfunction
 " s:UpdateValueInCache }}}
 
@@ -1568,19 +1738,65 @@ endfunction
 " After the function will get the new value from the user, it will update the
 " cache with this value.
 function! s:GetWithCache(key)
-    if !empty(s:cache[a:key])
-        if s:plugin.Flag('automatically_insert_cache')
-            let l:current_value = s:cache[a:key]
-        else
-            let l:current_value = s:InputWithDefault(a:key, s:cache[a:key])
-        endif
+    " Get the value
+    if s:IsInCache(a:key)
+        let l:current_value = s:GetFromCache(a:key)
     else
         let l:current_value = input(printf(s:insert_string_without_default, a:key))
     endif
+
+    " Update the cache.
     let s:cache[a:key] = l:current_value
+
+    " Return the value
     return l:current_value
 endfunction
 " s:GetWithCache }}}
+
+" s:GetWithCacheAndDefault {{{
+""
+" Get the needed argument using the cache as hint for the user or the default.
+" The value will be added from the cache in case it is there. If it is not in
+" the cache, it will be inserted from the defaults.
+function! s:GetWithCacheAndDefault(key, default)
+    " Get the value
+    if s:IsInCache(a:key)
+        let l:current_value = s:GetFromCache(a:key)
+    else
+        let l:current_value = s:GetFromDefault(a:key, a:default)
+    endif
+
+    " Update the cache.
+    let s:cache[a:key] = l:current_value
+
+    " Return the value
+    return l:current_value
+endfunction
+" s:GetWithCacheAndDefault }}}
+
+" s:GetFromCache {{{
+""
+" Get the value from the cache, when the value is inside the cache.
+function! s:GetFromCache(key)
+    if s:plugin.Flag('automatically_insert_cache')
+        return s:cache[a:key]
+    endif
+
+    return s:InputWithDefault(a:key, s:cache[a:key])
+endfunction
+" s:GetFromCache }}}
+
+" s:GetFromDefault {{{
+""
+" Get the value from the cache, when the value is inside the cache.
+function! s:GetFromDefault(key, default_value)
+    if s:plugin.Flag('automatically_insert_defaults')
+        return a:default_value
+    endif
+
+    return s:InputWithDefault(a:key, a:default_value)
+endfunction
+" s:GetFromDefault }}}
 
 " s:InputWithDefault {{{
 ""
@@ -1607,7 +1823,7 @@ endfunction
 "         cache.
 function! s:VerifyInCache(keys)
     for l:current_key in a:keys
-        if empty(s:cache[l:current_key])
+        if !s:IsInCache(l:current_key)
             throw printf(
                 \ "Missing argument in cache. Key '%s' should be in cache.",
                 \ l:current_key)
@@ -1615,6 +1831,61 @@ function! s:VerifyInCache(keys)
     endfor
 endfunction
 " s:VerifyInCache }}}
+
+" s:IsInCache {{{
+""
+" Return v:true if the given value is inside the cache, v:false otherwise.
+function! s:IsInCache(key)
+    if empty(s:cache[a:key])
+        return v:false
+    endif
+
+    return v:true
+endfunction
+" s:IsInCache }}}
+
+" s:GetWithCacheAndDefaultMethod {{{
+""
+" Get the value for the given key with the cache and a function that will be
+" able to get default argument for this value.
+" In case the value will be inside the cache, the function will get it from the
+" cache. Otherwise, the function will try to get the default value and use it
+" for the value.
+function! s:GetWithCacheAndDefaultMethod(key, default_method)
+    if s:plugin.Flag('use_cache_before_defaults')
+        if s:IsInCache(a:key)
+            return s:GetWithCache(a:key)
+        endif
+    endif
+
+    let l:default_value = a:default_method()
+    if l:default_value != v:null
+        " Continue to call the get with Cache in order to update the cache, even
+        " though the key is not there.
+        return s:GetWithCacheAndDefault(a:key, l:default_value)
+    endif
+
+    " Continue to call the get with Cache in order to update the cache, even
+    " though the key is not there.
+    return s:GetWithCache(a:key)
+endfunction
+" s:GetWithCacheAndDefaultMethod }}}
+
+" s:AddDefaultToCache {{{
+""
+" Get the value for the given key with the cache and a function that will be
+" able to get default argument for this value.
+" In case the value will be inside the cache, the function will get it from the
+" cache. Otherwise, the function will try to get the default value and use it
+" for the value.
+function! s:AddDefaultToCache(key, default_method)
+    let l:default_value = a:default_method()
+
+    if l:default_value != v:null
+        call s:UpdateValueInCache(a:key, l:default_value)
+    endif
+endfunction
+" s:AddDefaultToCache }}}
 
 " Cache }}}
 
@@ -1632,25 +1903,12 @@ endfunction
 " added to the MR. In case it was run with invalid arguments, an error will be
 " printed to the screen.
 function! mr_interface#AddComment(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
-            \  1: function("s:AddCommentWithBodyListArgumentAdapter"),
-            \  3: function("s:AddCommentListArgumentAdapter"),
-            \  4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCommentListArgumentAdapter"),
+        \  1: function("s:AddCommentWithBodyListArgumentAdapter"),
+        \  3: function("s:AddCommentListArgumentAdapter"),
+        \  4: function("s:AddCommentWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddComment }}}
 
@@ -1664,25 +1922,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid arguments, an error
 " will be printed to the screen.
 function! mr_interface#AddGeneralDiscussionThread(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
-            \  1: function("s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter"),
-            \  3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
-            \  4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddGeneralDiscussionThreadListArgumentAdapter"),
+        \  1: function("s:AddGeneralDiscussionThreadWithBodyListArgumentAdapter"),
+        \  3: function("s:AddGeneralDiscussionThreadListArgumentAdapter"),
+        \  4: function("s:AddGeneralDiscussionThreadWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddGeneralDiscussionThread }}}
 
@@ -1696,24 +1941,11 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThread(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
-            \ 10: function("s:AddCodeDiscussionThreadListArgumentAdapter"),
-            \ 11: function("s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadListArgumentAdapter"),
+        \ 10: function("s:AddCodeDiscussionThreadListArgumentAdapter"),
+        \ 11: function("s:AddCodeDiscussionThreadWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThread }}}
 
@@ -1727,25 +1959,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThreadOnOldCode(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
-            \  1: function("s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter"),
-            \  6: function("s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
-            \  7: function("s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+        \  1: function("s:AddCodeDiscussionThreadOnOldCodeWithBodyListArgumentAdapter"),
+        \  6: function("s:AddCodeDiscussionThreadOnOldCodeListArgumentAdapter"),
+        \  7: function("s:AddCodeDiscussionThreadOnOldCodeWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThreadOnOldCode }}}
 
@@ -1759,25 +1978,12 @@ endfunction
 " just be added to the MR. In case it was run with invalid number of arguments,
 " an error will be printed to the screen.
 function! mr_interface#AddCodeDiscussionThreadOnNewCode(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        let l:finished = s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
-            \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
-            \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
-            \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
-        if !l:finished
-            let l:should_finish_command = v:false
-        endif
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:InteractiveAddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+        \  1: function("s:AddCodeDiscussionThreadOnNewCodeWithBodyListArgumentAdapter"),
+        \  6: function("s:AddCodeDiscussionThreadOnNewCodeListArgumentAdapter"),
+        \  7: function("s:AddCodeDiscussionThreadOnNewCodeWithPrivateTokenListArgumentAdapter")})
 endfunction
 " mr_interface#AddCodeDiscussionThreadOnNewCode }}}
 
@@ -1785,12 +1991,12 @@ endfunction
 ""
 " Reset the cache of the plugin.
 function! mr_interface#ResetCache()
-    let l:should_finish_command = v:false
+    let l:should_finish_command = v:fals:e
     try
         call s:EnterCommand()
         let l:should_finish_command = v:true
-        " This command will map all the currently existing variables of the cache to
-        " be empty strings (which are their default values.
+        " This command will map all the currently existing variables of the
+        " cache to be empty strings (which are their default values).
         call map(s:cache, '""')
     catch /.*/
         call maktaba#error#Shout(v:exception)
@@ -1828,22 +2034,113 @@ endfunction
 " cache. In case the key is not a valid key in the cache, an error will be
 " printed to the screen.
 function! mr_interface#UpdateValueInCache(...)
-    let l:should_finish_command = v:false
-    try
-        call s:EnterCommand()
-        let l:should_finish_command = v:true
-        call s:RunCommandByNumberOfArguments(
-            \ a:000,
-            \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
-    catch /.*/
-        call maktaba#error#Shout(v:exception)
-    endtry
-    if l:should_finish_command
-        call s:ExitCommand()
-    endif
+    call s:RunCommand(
+        \ a:000,
+        \ {2: function("s:UpdateValueInCacheListArgumentAdapter")})
 endfunction
 " mr_interface#UpdateValueInCache }}}
+
+" mr_interface#AddDefaultToCache {{{
+""
+" Move over all the possible values that the plugin can calculate by itself, and
+" add the default values from there to the cache.
+function! mr_interface#AddDefaultToCache(...)
+    call s:RunCommand(
+        \ a:000,
+        \ {0: function("s:AddAllDefaultsToCacheListAdaptor"),
+        \  1: function("s:AddCurrentDefaultToCacheListAdaptor")})
+endfunction
+" mr_interface#AddDefaultToCache }}}
 
 " Exported Functions }}}
 
 " Functions }}}
+
+" Variables {{{
+
+" Constant Global Variables {{{
+
+""
+" An enum that will include all the possible commands.
+" @private
+let s:gitlab_actions = maktaba#enum#Create([
+            \ 'ADD_COMMENT',
+            \ 'ADD_GENERAL_DISCUSSION_THREAD',
+            \ 'ADD_CODE_DISCUSSION_THREAD'])
+
+""
+" The string for asking the user for a given key when there isn't any cache for
+" this value.
+" @private
+let s:insert_string_without_default = "Insert value for %s: "
+
+""
+" The string for asking the user for a given key when there is a value in the
+" cache for this value.
+" @private
+let s:insert_string_with_default = "Insert value for %s [%s]: "
+
+""
+" The string for telling the user that a command is already in progress
+let s:command_in_progress_error = "Another command is running. Can't run "
+            \ . "multiple command at the same time"
+
+
+""
+" The keys that can be calculated using default functions, and their functions.
+let s:keys_to_default_functions = {
+            \ 'merge request id': function('s:GetMRFromBranchName'),
+            \ 'project id': function('s:GetProjectIDFromDirectoryAndMap')}
+
+" Constant Global Variables }}}
+
+" Global Variables {{{
+
+""
+" All the configured arguments.
+" @private
+let s:plugin = maktaba#plugin#Get('vim-mr-interface')
+
+if !exists("s:cache")
+    ""
+    " A cache that will be used to save old values inserted by the user.
+    "
+    " Many of the command in the plugin will run a lot of times with most of the
+    " same arguments. In order to make it easier for the user to use the plugin,
+    " the plugin will maintain a simple cache with the last inserted value in
+    " any such field.
+    "
+    " The values of the cache are being set here explicitly on purpose, in order
+    " to let functions iterate over them if needed, even when they are not set.
+    "
+    " This is not a configurable variable on purpose. The user should change
+    " this variable only by using the specific callbacks of the plugin, it
+    " should not be changed directly from the user, since it might break things
+    " in the plugin.
+    "
+    " Whenever you change any of the values here, make sure to update the
+    " documentation in the flags file as well. This is duplication and ugly, but
+    " I couldn't find a way to make vimdoc include only part of the file, so it
+    " will stay there for now.
+    " @private
+    let s:cache = {
+                \ 'base sha': '',
+                \ 'start sha': '',
+                \ 'head sha': '',
+                \ 'project id': '',
+                \ 'merge request id': '',
+                \ 'gitlab private token': ''}
+endif
+
+if !exists("s:is_in_command")
+    ""
+    " v:true in case the plugin is in the middle of command, v:false otherwise.
+    " This is important because commands doesn't always end when the function
+    " returns (for example, when waiting for output from buffer), so this flag
+    " will make sure that commands aren't mangled together.
+    let s:is_in_command = v:false
+endif
+
+" Global Variables }}}
+
+" Variables }}}

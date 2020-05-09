@@ -201,6 +201,8 @@ In order to make the comment appear as change, you must specify the full sha of
 all the commits connected to it (base, head and start). If you don't specify the
 full hash, it will seem to work, however, the comment won't appear on the
 changes screen.
+In case you are inside the git repository you are using to add comments, the
+plugin should automatically send the full SHA.
 
 ### It is impossible to add comments on unmodified files
 
@@ -282,7 +284,7 @@ released in versions later than the planned one (except for special cases).
 - [x] Change comments to use temporary buffers ([#7][i7])
 - [x] Print errors for bad requests ([#29][i29])
 - [x] Add option to create comment on current line ([#8][i8])
-- [ ] Add parameter calculation to the plugin ([#9][i9])
+- [x] Add parameter calculation to the plugin ([#9][i9])
 - [ ] Release v0.2 ([#16][i16])
 
 ### Release v1.0
