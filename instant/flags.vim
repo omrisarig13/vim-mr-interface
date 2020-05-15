@@ -115,7 +115,7 @@ call s:plugin.Flag('names_to_id', {})
 ""
 " Whether to parse or not parse the references that the plugin gets.
 "
-" For more information, read @setction(sha-values).
+" For more information, read @section(sha-values).
 call s:plugin.Flag('should_parse_references', v:true)
 
 ""
