@@ -115,8 +115,16 @@ call s:plugin.Flag('names_to_id', {})
 ""
 " Whether to parse or not parse the references that the plugin gets.
 "
-" For more information, read @setction(sha-values).
+" For more information, read @section(sha-values).
 call s:plugin.Flag('should_parse_references', v:true)
+
+""
+" Any additional flags that the user want to run the curl command with.
+" This argument will send its value as part of the curl command, whenever
+" running commands with the Gitlab server.
+"
+" For full information on curl and its various flag, read curl's man page.
+call s:plugin.Flag('curl_additional_flags', '')
 
 ""
 " @section Cache Flags, cache-flags

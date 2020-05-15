@@ -1138,7 +1138,8 @@ function! s:CreateGitlabActionCommand(
     let l:authentication = s:CreateGitlabAuthentication(a:gitlab_authentication)
     let l:content = s:CreateCommandContent(a:content)
     return printf(
-        \ 'curl -H "Content-Type: application/json" -d ''%s'' --request POST %s %s',
+        \ 'curl %s -H "Content-Type: application/json" -d ''%s'' --request POST %s %s',
+        \ s:plugin.Flag('curl_additional_flags'),
         \ l:content,
         \ l:authentication,
         \ l:url)
