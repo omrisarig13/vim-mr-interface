@@ -321,6 +321,7 @@ released in versions later than the planned one (except for special cases).
 - [x] Release v0.2 ([#16][i16])
 
 ### Release v1.0
+- [x] Support user configured flags to curl command ([#37][i37])
 - [ ] Add code discussions using fugitive ([#10][i10])
 - [ ] Release v1.0 ([#17][i17])
 
@@ -348,3 +349,4 @@ released in versions later than the planned one (except for special cases).
 [i17]: https://github.com/omrisarig13/vim-mr-interface/issues/17
 [i29]: https://github.com/omrisarig13/vim-mr-interface/issues/29
 [i33]: https://github.com/omrisarig13/vim-mr-interface/issues/33
+[i37]: https://github.com/omrisarig13/vim-mr-interface/issues/37
