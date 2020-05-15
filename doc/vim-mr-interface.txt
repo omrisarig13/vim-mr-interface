@@ -124,6 +124,14 @@ Whether to parse or not parse the references that the plugin gets.
 For more information, read @setction(sha-values).
 Default: v:true `
 
+                                      *vim-mr-interface:curl_additional_flags*
+Any additional flags that the user want to run the curl command with. This
+argument will send its value as part of the curl command, whenever running
+commands with the Gitlab server.
+
+For full information on curl and its various flag, read curl's man page.
+Default: '' `
+
                                            *vim-mr-interface:plugin[commands]*
 Configures whether plugin/commands.vim should be loaded.
 Default: 1 `

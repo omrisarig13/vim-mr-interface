@@ -119,6 +119,14 @@ call s:plugin.Flag('names_to_id', {})
 call s:plugin.Flag('should_parse_references', v:true)
 
 ""
+" Any additional flags that the user want to run the curl command with.
+" This argument will send its value as part of the curl command, whenever
+" running commands with the Gitlab server.
+"
+" For full information on curl and its various flag, read curl's man page.
+call s:plugin.Flag('curl_additional_flags', '')
+
+""
 " @section Cache Flags, cache-flags
 " @parentsection config
 " The values of the cache flags can be also used when configuring the
