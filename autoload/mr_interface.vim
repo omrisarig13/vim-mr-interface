@@ -1150,12 +1150,36 @@ endfunction
 ""
 " Create a string ready to be sent as a content in the POST request of curl.
 function! s:CreateCommandContent(content)
-    " When running string() on a dictionary, it returns the strings in it with
-    " single quote, but CURL needs the strings to be with double quotes. This
-    " code replace all the single quote characters to double quotes.
     " TODO: This is a patch, and it is better to fix it to work better in the
     " future.
-    return substitute(string(a:content), "'", '"', 'g')
+    let l:content_as_string = string(a:content)
+
+    " Escape every double quotes - This is done by prepending \ to all the
+    " double quotes.
+    let l:content_with_escaped_double_quetes = substitute(
+            \ l:content_as_string,
+            \ '"',
+            \ '\\"', 'g')
+
+    " Escape every single quotes - This is done by breaking the string and
+    " concatenating it with a string with the single quote inside it. It is
+    " really ugly, but after researching it in the Internet, it seems to be the
+    " only way.
+    let l:content_with_escaped_single_quetes = substitute(
+        \ l:content_with_escaped_double_quetes,
+        \ "''",
+        \ "'\"'\"'", 'g')
+
+    " Change every single quote that is not intentional to be double quote. This
+    " is done because curl need to get the string with double quotes, not with
+    " single quote in it. This command does not change any quote that needs to
+    " stay there (because the user has inserted it).
+    let l:with_double_quetes_instead_of_single_ones = substitute(
+        \ l:content_with_escaped_single_quetes,
+        \ "\\v('\"'\")@<!'(\")@!",
+        \ '"', 'g')
+
+    return l:with_double_quetes_instead_of_single_ones
 endfunction
 " s:CreateCommandContent }}}
 
